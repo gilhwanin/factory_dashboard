@@ -16,7 +16,6 @@ from PyQt5.QtWidgets import (
     QDialog,
     QVBoxLayout,
     QHBoxLayout,
-    QLabel,
     QPushButton,
     QFileDialog,
     QInputDialog,
@@ -27,10 +26,12 @@ from PyQt5.QtGui import QBrush, QColor, QFont
 
 from UTIL.db_handler import getdb, runquery, closedb
 from ci_cd.updatedown import check_version_and_update
-from oracle import get_box_summary
 from UTIL.utils_qt import apply_table_style
 
 from UI.dashboard import Ui_Form
+
+from dialog.DashboardLogDialog import DashboardLogDialog
+from dialog.ProductListDialog import ProductListDialog
 
 CURRENT_VERSION = "a-0010"
 PROGRAM_NAME = "factory_dashboard"
@@ -83,103 +84,60 @@ class OrderDashboardWidget(QWidget):
         self.ui = Ui_Form()
         self.ui.setupUi(self)
 
-        # 🔹 프로그램이 켜져있는 동안 유지될 제품 리스트 상태
+        # 🔹 제품 리스트 상태 (프로그램 실행 동안 유지)
         self.product_list = list(PRODUCT_LIST)
 
         self._fullscreen_mode = False
         self.ui.control_frame.hide()
 
-        # 날짜 오늘로 세팅
+        # 날짜 설정
         self.ui.dateEdit.setDate(QDate.currentDate())
-        if hasattr(self.ui, "dateText"):
-            self.ui.dateText.setText(self.ui.dateEdit.date().toString("yyyy-MM-dd"))
+        self.ui.dateText.setText(self.ui.dateEdit.date().toString("yyyy-MM-dd"))
+
+        # 변경 이벤트 플래그
         self._product_table_item_changed_connected = False
         self._raw_table_item_changed_connected = False
         self._sauce_table_item_changed_connected = False
         self._vege_table_item_changed_connected = False
 
-        # 테이블 스타일 (공통 베이스 사용)
-        if hasattr(self.ui, "tableWidget1"):
-            self._setup_table_base(self.ui.tableWidget1)
+        # 테이블 스타일 적용
+        self._setup_table_base(self.ui.tableWidget1)
+        self._setup_table_base(self.ui.tableWidget2)
+        self._setup_table_base(self.ui.tableWidget3)
+        self._setup_table_base(self.ui.tableWidget4)
 
-        if hasattr(self.ui, "tableWidget2"):
-            self._setup_table_base(self.ui.tableWidget2)
-
-        if hasattr(self.ui, "tableWidget3"):
-            self._setup_table_base(self.ui.tableWidget3)
-
-        if hasattr(self.ui, "tableWidget4"):
-            self._setup_table_base(self.ui.tableWidget4)
-        # 버튼/시그널 연결
+        # -----------------------------
+        # 버튼 / 시그널 연결 (명시적)
+        # -----------------------------
         self.ui.btn_view.clicked.connect(self.on_click_toggle_fullscreen)
+        self.ui.btn_prev.clicked.connect(self.on_click_prev_date)
+        self.ui.btn_next.clicked.connect(self.on_click_next_date)
 
-        if hasattr(self.ui, "btn_imsi1"):
-            self.ui.btn_imsi1.clicked.connect(self.oracle_test)
+        self.ui.btn_product.clicked.connect(self.on_click_tab_product)
+        self.ui.btn_raw.clicked.connect(self.on_click_tab_raw)
+        self.ui.btn_sauce.clicked.connect(self.on_click_tab_sauce)
+        self.ui.btn_vege.clicked.connect(self.on_click_tab_vege)
 
-        if hasattr(self.ui, "btn_prev"):
-            self.ui.btn_prev.clicked.connect(self.on_click_prev_date)
+        self.ui.btn_add.clicked.connect(self.on_click_add_dummy_rows)
+        self.ui.btn_del.clicked.connect(self.on_click_delete_rows)
+        self.ui.btn_del_row.clicked.connect(self.on_click_delete_selected_products)
+        self.ui.btn_update.clicked.connect(self.on_click_update_order_qty_after)
+        self.ui.btn_log.clicked.connect(self.on_click_show_log_dialog)
+        self.ui.btn_excel.clicked.connect(self.on_click_export_excel)
+        self.ui.btn_admin.clicked.connect(self.on_click_toggle_admin)
 
-        if hasattr(self.ui, "btn_next"):
-            self.ui.btn_next.clicked.connect(self.on_click_next_date)
+        # 생산량(Prodcued) 실적 업데이트 버튼
+        self.ui.btn_update_product.clicked.connect(self.on_click_update_product)
 
-        if hasattr(self.ui, "btn_product"):
-            self.ui.btn_product.clicked.connect(self.on_click_tab_product)
-
-        if hasattr(self.ui, "btn_raw"):
-            self.ui.btn_raw.clicked.connect(self.on_click_tab_raw)
-
-        if hasattr(self.ui, "btn_sauce"):
-            self.ui.btn_sauce.clicked.connect(self.on_click_tab_sauce)
-
-        if hasattr(self.ui, "btn_vege"):
-            self.ui.btn_vege.clicked.connect(self.on_click_tab_vege)
-
-        if hasattr(self.ui, "btn_add"):
-            self.ui.btn_add.clicked.connect(self.on_click_add_dummy_rows)
-
-        if hasattr(self.ui, "btn_del"):
-            self.ui.btn_del.clicked.connect(self.on_click_delete_rows)
-
-        if hasattr(self.ui, "btn_del_row"):
-            self.ui.btn_del_row.clicked.connect(self.on_click_delete_selected_products)
-
-        if hasattr(self.ui, "btn_update"):
-            self.ui.btn_update.clicked.connect(self.on_click_update_order_qty_after)
-
-        if hasattr(self.ui, "btn_log"):
-            self.ui.btn_log.clicked.connect(self.on_click_show_log_dialog)
-
-        if hasattr(self.ui, "btn_excel"):
-            self.ui.btn_excel.clicked.connect(self.on_click_export_excel)
-
-        if hasattr(self.ui, "btn_admin"):
-            self.ui.btn_admin.clicked.connect(self.on_click_toggle_admin)
-
-        # 🔹 신규: 생산량(produced_qty) 갱신 버튼
-        if hasattr(self.ui, "btn_update_product"):
-            self.ui.btn_update_product.clicked.connect(self.on_click_update_product)
-
-        # 탭 이벤트
-        if hasattr(self.ui, "tabWidget"):
-            self.ui.tabWidget.currentChanged.connect(self.on_tab_changed)
+        # 탭 전환
+        self.ui.tabWidget.currentChanged.connect(self.on_tab_changed)
 
         # 날짜 변경 이벤트
-        if isinstance(self.ui.dateEdit, QDateEdit):
-            self.ui.dateEdit.dateChanged.connect(self.on_date_changed)
-        elif isinstance(self.ui.dateEdit, QDateTimeEdit):
-            self.ui.dateEdit.dateTimeChanged.connect(lambda _: self.on_date_changed())
+        # dateEdit 은 QDateEdit 로 고정되어 있으니 조건 제거
+        self.ui.dateEdit.dateChanged.connect(self.on_date_changed)
 
         # 최초 로딩
         self._load_product_tab()
-
-    def oracle_test(self):
-        print("oracle test")
-        summary = get_box_summary()
-        QMessageBox.information(
-            self,
-            "오라클 조회 결과",
-            f"팩수: {summary['PACK']}\n총 박스수: {summary['TOTAL_BOXES']}\n박스 중량(kg): {summary['BOX_WEIGHT']}"
-        )
 
     @staticmethod
     def _fmt(val) -> str:
@@ -281,18 +239,13 @@ class OrderDashboardWidget(QWidget):
         self.ui.dateEdit.setDate(new)  # dateChanged 시그널 자동 발생 → 테이블 자동 갱신됨
 
     def on_date_changed(self):
-        if not hasattr(self.ui, "tabWidget"):
-            return
-
-        # 🔥 1) dateText 갱신
+        # 날짜 텍스트 갱신
         qdate = self.ui.dateEdit.date()
         date_str = qdate.toString("yyyy-MM-dd")
-        if hasattr(self.ui, "dateText"):
-            self.ui.dateText.setText(date_str)
+        self.ui.dateText.setText(date_str)
 
-        # 🔥 2) 기존 탭별 데이터 로딩
+        # 탭별 데이터 로딩
         idx = self.ui.tabWidget.currentIndex()
-
         if idx == 0:
             self._load_product_tab()
         elif idx == 1:
@@ -600,10 +553,6 @@ class OrderDashboardWidget(QWidget):
     #5. 데이터 로딩
     def _load_product_tab(self):
         table = self.ui.tableWidget1
-
-        if not hasattr(self.ui, "dateEdit"):
-            return
-
         qdate: QDate = self.ui.dateEdit.date()
         sdate_str = qdate.toString("yyyy-MM-dd")
 
@@ -696,9 +645,6 @@ class OrderDashboardWidget(QWidget):
         table.blockSignals(False)
 
     def _load_raw_tab(self):
-        if not hasattr(self.ui, "tableWidget2"):
-            return
-
         table = self.ui.tableWidget2
         qdate = self.ui.dateEdit.date()
         sdate_str = qdate.toString("yyyy-MM-dd")
@@ -776,14 +722,7 @@ class OrderDashboardWidget(QWidget):
         table.blockSignals(False)
 
     def _load_sauce_tab(self):
-        if not hasattr(self.ui, "tableWidget3"):
-            return
-
         table = self.ui.tableWidget3
-
-        if not hasattr(self.ui, "dateEdit"):
-            return
-
         qdate = self.ui.dateEdit.date()
         sdate_str = qdate.toString("yyyy-MM-dd")
 
@@ -859,9 +798,6 @@ class OrderDashboardWidget(QWidget):
         table.blockSignals(False)
 
     def _load_vege_tab(self):
-        if not hasattr(self.ui, "tableWidget4"):  # 너 UI에서 tableWidget4 = 야채 탭이라고 가정
-            return
-
         table = self.ui.tableWidget4
         qdate = self.ui.dateEdit.date()
         sdate_str = qdate.toString("yyyy-MM-dd")
@@ -2567,10 +2503,6 @@ class OrderDashboardWidget(QWidget):
             return
 
         # 2) 기존 로직 수행 (PRODUCT_LIST → self.product_list 로 변경)
-        if not hasattr(self.ui, "dateEdit"):
-            QMessageBox.warning(self, "오류", "dateEdit 위젯을 찾을 수 없습니다.")
-            return
-
         qdate: QDate = self.ui.dateEdit.date()
         sdate_dt = datetime(qdate.year(), qdate.month(), qdate.day(), 0, 0, 0)
         sdate_str = qdate.toString("yyyy-MM-dd")
@@ -2900,10 +2832,6 @@ class OrderDashboardWidget(QWidget):
         → PAN 합(박스) × PACSU = 생산 팩 수
         """
         try:
-            if not hasattr(self.ui, "dateEdit"):
-                QMessageBox.warning(self, "오류", "dateEdit 위젯을 찾을 수 없습니다.")
-                return
-
             qdate: QDate = self.ui.dateEdit.date()
             sdate_str = qdate.toString("yyyy-MM-dd")
 
@@ -3042,10 +2970,6 @@ class OrderDashboardWidget(QWidget):
         - 마켓컬리: 박스 수 (PACSU 적용 X)
         업데이트 후 DASHBOARD_LOG 기록.
         """
-        if not hasattr(self.ui, "dateEdit"):
-            QMessageBox.warning(self, "오류", "dateEdit 위젯을 찾을 수 없습니다.")
-            return
-
         qdate: QDate = self.ui.dateEdit.date()
         sdate_str = qdate.toString("yyyy-MM-dd")
 
@@ -3254,414 +3178,6 @@ class OrderDashboardWidget(QWidget):
             import traceback
             traceback.print_exc()
             QMessageBox.critical(self, "오류", f"엑셀 저장 중 오류가 발생했습니다.\n{e}")
-
-
-class DashboardLogDialog(QDialog):
-    """
-    GP..DASHBOARD_LOG를 날짜별로 조회하는 팝업 (UTIL.db_handler 기반)
-    """
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setWindowTitle("발주 로그 조회")
-        self.resize(900, 500)
-
-        # -------------------------------
-        # 레이아웃 구성
-        # -------------------------------
-        layout = QVBoxLayout(self)
-
-        # 상단 날짜 + 버튼
-        top_layout = QHBoxLayout()
-        top_layout.addWidget(QLabel("날짜:"))
-
-        self.dateEdit = QDateEdit()
-        self.dateEdit.setCalendarPopup(True)
-        self.dateEdit.setDate(QDate.currentDate())
-        top_layout.addWidget(self.dateEdit)
-
-        self.btn_search = QPushButton("조회")
-        top_layout.addWidget(self.btn_search)
-
-        top_layout.addStretch()
-        layout.addLayout(top_layout)
-
-        # 중앙 테이블
-        self.table = QTableWidget(self)
-        headers = ["PK", "변경시각", "ID", "날짜", "CO", "업체", "변경전 → 변경후"]
-        self.table.setColumnCount(len(headers))
-        self.table.setHorizontalHeaderLabels(headers)
-        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-
-        # 🔹 테이블 스타일 적용
-        apply_table_style(self.table)
-
-        layout.addWidget(self.table)
-
-        # 하단 닫기 버튼
-        btn_close = QPushButton("닫기")
-        btn_close.clicked.connect(self.close)
-        layout.addWidget(btn_close, alignment=Qt.AlignRight)
-
-        # 이벤트 연결
-        self.btn_search.clicked.connect(self.load_logs)
-        self.dateEdit.dateChanged.connect(lambda _: self.load_logs())
-
-        # 초기 데이터 로드
-        self.load_logs()
-
-    # ------------------------------------------------------
-    # 로그 조회 함수 (UTIL.db_handler 기반)
-    # ------------------------------------------------------
-    def load_logs(self):
-        sdate_str = self.dateEdit.date().toString("yyyy-MM-dd")
-
-        conn, cur = getdb(DB_NAME)
-        try:
-            sql = """
-                SELECT 
-                    PK, 
-                    update_time, 
-                    id, 
-                    sdate, 
-                    co, 
-                    vendor, 
-                    qty_before, 
-                    qty_after
-                FROM DASHBOARD_LOG
-                WHERE CONVERT(DATE, sdate) = %s
-                ORDER BY update_time DESC, PK DESC
-            """
-            df = runquery(cur, sql, [sdate_str])
-        except Exception as e:
-            QMessageBox.critical(self, "DB 오류", str(e))
-            return
-        finally:
-            closedb(conn)
-
-        self.table.setRowCount(0)
-
-        # 결과 없을 때
-        if df is None or len(df) == 0:
-            QMessageBox.information(self, "안내", f"{sdate_str} 로그 데이터가 없습니다.")
-            return
-
-        df = pd.DataFrame(df)
-        df.columns = [str(c).upper() for c in df.columns]
-        self.table.setRowCount(len(df))
-
-        # 테이블에 데이터 채우기
-        for row_idx, row in enumerate(df.itertuples(index=False)):
-            pk = str(row.PK)
-            update_time = row.UPDATE_TIME
-            log_id = str(row.ID)
-            sdate = row.SDATE
-            co = str(row.CO)
-            vendor = str(row.VENDOR)
-            before = int(row.QTY_BEFORE or 0)
-            after = int(row.QTY_AFTER or 0)
-            diff = after - before
-
-            # 날짜/시간 포맷
-            if isinstance(update_time, datetime):
-                update_time_str = update_time.strftime("%Y-%m-%d %H:%M:%S")
-            else:
-                update_time_str = str(update_time)
-
-            if hasattr(sdate, "strftime"):
-                sdate_str2 = sdate.strftime("%Y-%m-%d")
-            else:
-                sdate_str2 = str(sdate)
-
-            # 변경내용 문자열 구성
-            change_text = f"{before} → {after}"
-            if diff != 0:
-                change_text += f" (Δ {diff})"
-
-            row_data = [
-                pk,
-                update_time_str,
-                log_id,
-                sdate_str2,
-                co,
-                vendor,
-                change_text,
-            ]
-
-            for col, val in enumerate(row_data):
-                item = QTableWidgetItem(str(val))
-                item.setFlags(item.flags() & ~Qt.ItemIsEditable)
-                self.table.setItem(row_idx, col, item)
-
-
-class ProductListDialog(QDialog):
-    """
-    제품 대시보드에 사용할 PRODUCT_LIST를 관리하는 창.
-    - 현재 리스트 표시 (CO, 업체명, UNAME)
-    - 추가 / 삭제 / 기본값으로 되돌리기
-    """
-
-    def __init__(self, parent, product_list):
-        super().__init__(parent)
-        self.setWindowTitle("제품 리스트 관리")
-        self.resize(700, 400)
-
-        # 디폴트 / 현재 리스트
-        self._default_list = list(PRODUCT_LIST)
-        self._product_list = list(product_list)
-
-        main_layout = QVBoxLayout(self)
-
-        # -------------------
-        # 테이블
-        # -------------------
-        self.table = QTableWidget(0, 3, self)
-        self.table.setHorizontalHeaderLabels(["CO", "업체명", "상품명(UNAME)"])
-        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        self.table.setSelectionBehavior(QTableWidget.SelectRows)
-        self.table.setEditTriggers(QTableWidget.NoEditTriggers)
-
-        # 🔹 테이블 스타일 적용
-        apply_table_style(self.table)
-
-        main_layout.addWidget(self.table)
-
-        # -------------------
-        # 버튼
-        # -------------------
-        btn_layout = QHBoxLayout()
-        self.btn_add = QPushButton("추가")
-        self.btn_remove = QPushButton("삭제")
-        self.btn_reset = QPushButton("기본값으로 되돌리기")
-
-        btn_layout.addWidget(self.btn_add)
-        btn_layout.addWidget(self.btn_remove)
-        btn_layout.addWidget(self.btn_reset)
-        btn_layout.addStretch()
-        main_layout.addLayout(btn_layout)
-
-        # 확인/취소
-        bottom_layout = QHBoxLayout()
-        bottom_layout.addStretch()
-        self.btn_ok = QPushButton("확인")
-        self.btn_cancel = QPushButton("취소")
-        bottom_layout.addWidget(self.btn_ok)
-        bottom_layout.addWidget(self.btn_cancel)
-        main_layout.addLayout(bottom_layout)
-
-        # 시그널 연결
-        self.btn_add.clicked.connect(self.on_add)
-        self.btn_remove.clicked.connect(self.on_remove)
-        self.btn_reset.clicked.connect(self.on_reset)
-        self.btn_ok.clicked.connect(self.accept)
-        self.btn_cancel.clicked.connect(self.reject)
-
-        # 초기 데이터 로드
-        self._reload_table()
-
-    # -----------------------------------------------------
-    # UNAME 매핑 조회
-    # -----------------------------------------------------
-    def _fetch_uname_map(self, cos):
-        if not cos:
-            return {}
-
-        placeholders = ", ".join(["%s"] * len(cos))
-        sql = f"""
-            SELECT CO, UNAME
-            FROM MASTER
-            WHERE CO IN ({placeholders})
-        """
-
-        conn, cur = getdb("GWCHUL")
-        try:
-            df = runquery(cur, sql, cos)
-        finally:
-            closedb(conn)
-
-        result = {}
-        if df is not None and not df.empty:
-            for _, row in df.iterrows():
-                co = str(row["CO"]).strip()
-                uname = str(row["UNAME"]).strip()
-                result[co] = uname
-        return result
-
-    # -----------------------------------------------------
-    # 테이블 리로드
-    # -----------------------------------------------------
-    def _reload_table(self):
-        self.table.setRowCount(0)
-
-        cos = sorted({co for co, _ in self._product_list})
-        uname_map = self._fetch_uname_map(cos)
-
-        for co, vendor in self._product_list:
-            row = self.table.rowCount()
-            self.table.insertRow(row)
-            self.table.setItem(row, 0, QTableWidgetItem(str(co)))
-            self.table.setItem(row, 1, QTableWidgetItem(str(vendor)))
-            self.table.setItem(row, 2, QTableWidgetItem(uname_map.get(str(co), "")))
-
-    # -----------------------------------------------------
-    # 버튼 핸들러들
-    # -----------------------------------------------------
-    def on_add(self):
-        dlg = MasterSearchDialog(self)
-        if dlg.exec_() == QDialog.Accepted and dlg.selected_co:
-            key = (dlg.selected_co, dlg.selected_vendor)
-            if key in self._product_list:
-                QMessageBox.information(self, "안내", "이미 존재하는 항목입니다.")
-                return
-
-            self._product_list.append(key)
-            self._reload_table()
-
-    def on_remove(self):
-        rows = sorted({idx.row() for idx in self.table.selectedIndexes()}, reverse=True)
-        for r in rows:
-            co = self.table.item(r, 0).text()
-            vendor = self.table.item(r, 1).text()
-            if (co, vendor) in self._product_list:
-                self._product_list.remove((co, vendor))
-            self.table.removeRow(r)
-
-    def on_reset(self):
-        self._product_list = list(self._default_list)
-        self._reload_table()
-
-    def get_product_list(self):
-        return list(self._product_list)
-
-
-class MasterSearchDialog(QDialog):
-    """
-    GWCHUL..MASTER 에서 CO/UNAME 검색 후 선택 → (CO, UNAME, 업체명)
-    """
-
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setWindowTitle("MASTER 검색")
-        self.resize(700, 400)
-
-        self.selected_co = None
-        self.selected_uname = None
-        self.selected_vendor = None
-
-        main_layout = QVBoxLayout(self)
-
-        # ----------------------
-        # 검색 영역
-        # ----------------------
-        top_layout = QHBoxLayout()
-        self.combo_target = QComboBox()
-        self.combo_target.addItems(["전체", "CO", "상품명"])
-
-        self.edit_keyword = QLineEdit()
-        self.edit_keyword.setPlaceholderText("CO 또는 상품명 입력")
-
-        self.combo_vendor = QComboBox()
-        self.combo_vendor.addItems(VENDOR_CHOICES)
-
-        self.btn_search = QPushButton("검색")
-
-        top_layout.addWidget(self.combo_target)
-        top_layout.addWidget(self.edit_keyword)
-        top_layout.addWidget(self.combo_vendor)
-        top_layout.addWidget(self.btn_search)
-        main_layout.addLayout(top_layout)
-
-        # ----------------------
-        # 테이블
-        # ----------------------
-        self.table = QTableWidget(0, 2, self)
-        self.table.setHorizontalHeaderLabels(["CO", "UNAME"])
-        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        self.table.setSelectionBehavior(QTableWidget.SelectRows)
-        self.table.setEditTriggers(QTableWidget.NoEditTriggers)
-
-        # 🔹 테이블 스타일 적용
-        apply_table_style(self.table)
-
-        main_layout.addWidget(self.table)
-
-        # ----------------------
-        # 버튼 하단
-        # ----------------------
-        bottom_layout = QHBoxLayout()
-        bottom_layout.addStretch()
-
-        self.btn_add = QPushButton("선택 추가")
-        self.btn_close = QPushButton("닫기")
-
-        bottom_layout.addWidget(self.btn_add)
-        bottom_layout.addWidget(self.btn_close)
-        main_layout.addLayout(bottom_layout)
-
-        # ----------------------
-        # 이벤트
-        # ----------------------
-        self.btn_search.clicked.connect(self.on_search)
-        self.btn_add.clicked.connect(self.on_add_clicked)
-        self.btn_close.clicked.connect(self.reject)
-        self.edit_keyword.returnPressed.connect(self.on_search)
-
-    # -----------------------------------------------------
-    def on_search(self):
-        keyword = self.edit_keyword.text().strip()
-        target = self.combo_target.currentText()
-
-        where = []
-        params = []
-
-        if keyword:
-            like = f"%{keyword}%"
-            if target == "CO":
-                where.append("CO LIKE %s")
-                params.append(like)
-            elif target == "상품명":
-                where.append("UNAME LIKE %s")
-                params.append(like)
-            else:
-                where.append("(CO LIKE %s OR UNAME LIKE %s)")
-                params.extend([like, like])
-
-        where_sql = "WHERE " + " AND ".join(where) if where else ""
-
-        sql = f"""
-            SELECT TOP 200 CO, UNAME
-            FROM MASTER
-            {where_sql}
-            ORDER BY CO
-        """
-
-        conn, cur = getdb("GWCHUL")
-        try:
-            df = runquery(cur, sql, params)
-        finally:
-            closedb(conn)
-
-        self.table.setRowCount(0)
-        if df is None or df.empty:
-            return
-
-        for _, row in df.iterrows():
-            r = self.table.rowCount()
-            self.table.insertRow(r)
-            self.table.setItem(r, 0, QTableWidgetItem(str(row["CO"]).strip()))
-            self.table.setItem(r, 1, QTableWidgetItem(str(row["UNAME"]).strip()))
-
-    # -----------------------------------------------------
-    def on_add_clicked(self):
-        selected = self.table.selectionModel().selectedRows()
-        if not selected:
-            QMessageBox.information(self, "안내", "추가할 항목을 선택하세요.")
-            return
-
-        row = selected[0].row()
-        self.selected_co = self.table.item(row, 0).text()
-        self.selected_uname = self.table.item(row, 1).text()
-        self.selected_vendor = self.combo_vendor.currentText()
-        self.accept()
 
         
 # ---------------------------------------------------------
