@@ -9,24 +9,19 @@ from PyQt5.QtWidgets import (
     QTableWidgetItem,
     QMessageBox,
     QAbstractItemView,
-    QDateEdit,
-    QDateTimeEdit,
     QTableWidget,
     QHeaderView,
     QDialog,
-    QVBoxLayout,
-    QHBoxLayout,
-    QPushButton,
     QFileDialog,
     QInputDialog,
     QLineEdit,
-    QComboBox
 )
 from PyQt5.QtGui import QBrush, QColor, QFont
 
 from UTIL.db_handler import getdb, runquery, closedb
 from ci_cd.updatedown import check_version_and_update
-from UTIL.utils_qt import apply_table_style
+from UTIL.util import fmt
+from logic.cal_values import *
 
 from UI.dashboard import Ui_Form
 
@@ -37,23 +32,29 @@ CURRENT_VERSION = "a-0010"
 PROGRAM_NAME = "factory_dashboard"
 
 DB_NAME = "GP"
-IS_ADMIN = False
+CURRENT_LEVEL = 0   # 로그인 전 0
+CURRENT_USER = None  # 선택
 
 # 상품 리스트: (코드, 업체명)
 PRODUCT_LIST = [
-    ("511476", "코스온"),
-    ("511379", "코스온"),
-    ("511467", "코스온"),
-    ("511418", "이마트"),
-    ("502427", "이마트"),
-    ("502341", "이마트"),
-    ("520563", "이마트"),
-    ("520651", "이마트"),
-    ("520328", "이마트"),
-    ("520712", "이마트"),
-    ("520449", "홈플러스"),
-    ("511540", "마켓컬리"),
-    ("502415", "마켓컬리"),
+    ("511476", "코스온"), #코스온_돈육양념칼집구이(600g)(미국산)
+    ("511379", "코스온"), #코스온_돈육고추장불고기(2.4kg)
+    ("511467", "코스온"), #코스온_부채살양념칼집구이(600g*4)(미국산)
+    ("511418", "이마트"), #이마트_고추장돼지주물럭(1kg)
+    ("502427", "이마트"), #이마트_간장돼지불고기(1kg)
+    ("502341", "이마트"), #이마트_양념안창살구이(0.8kg)210412(호주산)
+    ("502322", "이마트"), #이마트_양념소불고기(0.8kg)(호주산)
+    ("502811", "이마트"), #이마트_양념LA갈비(0.8kg)(미국산)
+    ("520642", "이마트"), #저당소불고기800g(이마트)
+    ("520563", "이마트"), #의성마늘황제갈비살구이700G(호주산)(이마트)
+    ("520651", "이마트"), #양념토시살구이800G(호주산)(이마트)
+    ("520328", "이마트"), #한우양념소불고기700g(이마트)
+    ("520712", "이마트"), #의성마늘황제갈비살구이700G(호주산)(이마트)
+    ("520449", "홈플러스"), #생생양념한우불고기600g(홈플러스)
+    ("502832", "홈플러스"), #홈플_호주청정우양념소불고기(800g)
+    ("520568", "홈플러스"), #호주산양념소불고기600g(홈플익스)
+    ("502415", "마켓컬리"), #마켓컬리_양념소불고기(1kg)KF365(미국산)
+    ("511540", "마켓컬리"), #마켓컬리 KF365양념소불고기 500g
 ]
 VENDOR_CHOICES = ["코스온", "이마트", "홈플러스", "마켓컬리"]
 
@@ -74,7 +75,8 @@ COL_PLAN_KG = 10
 COL_CUR_PROD = 11
 COL_REMAIN = 12
 COL_TODAY_RES = 13
-
+COL_TRATE = 14
+COL_WORK_STATUS = 15
 
 class OrderDashboardWidget(QWidget):
 
@@ -125,6 +127,7 @@ class OrderDashboardWidget(QWidget):
         self.ui.btn_log.clicked.connect(self.on_click_show_log_dialog)
         self.ui.btn_excel.clicked.connect(self.on_click_export_excel)
         self.ui.btn_admin.clicked.connect(self.on_click_toggle_admin)
+        self.ui.btn_complete.clicked.connect(self.on_click_complete_product)
 
         # 생산량(Prodcued) 실적 업데이트 버튼
         self.ui.btn_update_product.clicked.connect(self.on_click_update_product)
@@ -138,42 +141,7 @@ class OrderDashboardWidget(QWidget):
 
         # 최초 로딩
         self._load_product_tab()
-
-    @staticmethod
-    def _fmt(val) -> str:
-        """
-        숫자(int/float/str) → '1,234' 형식으로 포맷
-        숫자가 아니면 그대로 문자열 반환
-        """
-        try:
-            # 👉 먼저 실제 숫자인 경우 바로 처리
-            if isinstance(val, int):
-                return f"{val:,}"
-
-            if isinstance(val, float):
-                # 소수점이 있으면 자연스럽게 처리 / 정수면 소수 제거
-                if val.is_integer():
-                    return f"{int(val):,}"
-                else:
-                    return f"{val:,.1f}"
-
-            # 👉 문자열인 경우 처리
-            text = str(val).replace(",", "").strip()
-
-            # 문자열이지만 int/float로 변환 가능할 때
-            if "." in text:
-                num = float(text)
-                if num.is_integer():
-                    return f"{int(num):,}"
-                else:
-                    return f"{num:,.1f}"
-            else:
-                num = int(text)
-                return f"{num:,}"
-
-        except:
-            # 숫자로 볼 수 없는 경우 → 그대로 텍스트 반환
-            return str(val)
+        self._apply_column_visibility_rules()
 
     #2. UI 상태 관련 함수
     def on_click_toggle_fullscreen(self):
@@ -194,38 +162,73 @@ class OrderDashboardWidget(QWidget):
 
             # 🔵 control_frame 다시 보이기
             self.ui.view_frame.show()
-            if IS_ADMIN:
+            if CURRENT_LEVEL >= 2:
                 self.ui.control_frame.show()
+            else:
+                self.ui.control_frame.hide()
 
         # 레이아웃 전체 다시 배치
         self.layout().update()
 
-    def _ask_admin_password(self) -> bool:
+    def _ask_admin_login(self):
+        """
+        DASHBOARD_ID 테이블에서 비밀번호만으로 사용자 검증.
+        pw는 UNIQUE 조건이므로 하나의 계정만 매칭됨.
+        """
         pw, ok = QInputDialog.getText(
             self,
-            "관리자 인증",
-            "관리자 비밀번호를 입력하세요:",
+            "관리자 로그인",
+            "비밀번호를 입력하세요:",
             QLineEdit.Password
         )
 
         if not ok:
             return False
 
-        return pw == "1004"
+        conn, cur = getdb("GP")
+        try:
+            sql = """
+                SELECT name, level
+                FROM DASHBOARD_ID
+                WHERE pw = %s
+            """
+            df = runquery(cur, sql, [pw])
+        finally:
+            closedb(conn)
+
+        # 로그인 실패
+        if df is None or df.empty:
+            QMessageBox.warning(self, "로그인 실패", "일치하는 계정이 없습니다.")
+            return False
+
+        # 결과 1건
+        name = str(df.iloc[0]["name"]).strip()
+        level = int(df.iloc[0]["level"])
+
+        # 글로벌 저장
+        global CURRENT_LEVEL, CURRENT_USER
+        CURRENT_LEVEL = level
+        CURRENT_USER = name
+
+        return True
 
     def on_click_toggle_admin(self):
-        global IS_ADMIN
+        global CURRENT_LEVEL
 
-        if IS_ADMIN:
-            IS_ADMIN = False
+        # 이미 관리자면 OFF
+        if CURRENT_LEVEL >= 1:
+            CURRENT_LEVEL = 0
             self.ui.control_frame.hide()
+            self._apply_column_visibility_rules()
+            self.ui.btn_admin.setText("관리자")
             return
 
-        if self._ask_admin_password():
-            IS_ADMIN = True
-            self.ui.control_frame.show()
-        else:
-            QMessageBox.warning(self, "인증 실패", "비밀번호가 올바르지 않습니다.")
+        # 로그인 시도
+        if self._ask_admin_login():
+            if CURRENT_LEVEL >= 2:
+                self.ui.control_frame.show()
+            self._apply_column_visibility_rules()
+            self.ui.btn_admin.setText(f"관리자: {CURRENT_USER}")
 
     #3. 탭 / 날짜 이동
     def on_click_prev_date(self):
@@ -302,11 +305,24 @@ class OrderDashboardWidget(QWidget):
                }
            """)
 
-    def _setup_product_headers(self, table: QTableWidget):
+    def _setup_product_headers(self, table):
         headers = [
-            "업체명", "품명", "팩중량", "발주량", "최종발주량",
-            "팩 차이", "전일 잔피", "생산 팩수", "선 생산",
-            "생산계획", "팩수 to kg", "현재생산량", "남은생산량", "당일 잔피",
+            "업체명",  # 숨김 처리 예정
+            "품명",
+            "팩중량",
+            "발주량",
+            "최종발주량",
+            "팩 차이",
+            "전일 잔피",
+            "생산 팩수",
+            "선 생산",
+            "생산계획",
+            "팩수 to kg",
+            "현재생산량",
+            "남은생산량",
+            "당일 잔피",
+            "수율",  # 🔥 trate 추가
+            "작업상태"  # 🔥 work_status 추가
         ]
         table.setColumnCount(len(headers))
         table.setHorizontalHeaderLabels(headers)
@@ -327,9 +343,6 @@ class OrderDashboardWidget(QWidget):
             else:
                 item.setBackground(QBrush(header_normal))
 
-        # -----------------------------------------------------
-        # 헤더 설정 (원료 탭)
-        # -----------------------------------------------------
 
     def _setup_raw_headers(self, table: QTableWidget):
         headers = [
@@ -550,6 +563,16 @@ class OrderDashboardWidget(QWidget):
         table.horizontalHeader().setMinimumSectionSize(10)
         table.setColumnWidth(target_col, 480)
 
+    def _apply_column_visibility_rules(self):
+        table = self.ui.tableWidget1
+
+        # 관리자 레벨 2 이상만 보여야 하는 컬럼
+        admin_only_cols = [COL_VENDOR, COL_PKG, COL_PREV_RES, COL_PRODUCTION, COL_PRE_PROD, COL_PLAN_KG, COL_REMAIN, COL_TODAY_RES]
+
+
+        for col in admin_only_cols:
+            table.setColumnHidden(col, CURRENT_LEVEL < 2)
+
     #5. 데이터 로딩
     def _load_product_tab(self):
         table = self.ui.tableWidget1
@@ -565,7 +588,7 @@ class OrderDashboardWidget(QWidget):
                     order_qty, order_qty_after,
                     prev_residue, pre_production_qty,
                     produced_qty, remain_production_qty,
-                    today_residue
+                    today_residue, work_status, trate
                 FROM ORDER_DASHBOARD
                 WHERE CONVERT(DATE, sdate) = %s
                 ORDER BY PK
@@ -611,22 +634,27 @@ class OrderDashboardWidget(QWidget):
             plan_qty = production_qty + pre_production_qty
             plan_kg = plan_qty * pkg
             remain_qty = plan_qty - produced_qty
+            work_status = row.WORK_STATUS if row.WORK_STATUS else ""
+            trate_val = row.TRATE if row.TRATE is not None else 0
+            trate_text = fmt(f"{float(trate_val):.2f}")
 
             values = [
                 rname,
                 uname,
-                self._fmt(f"{pkg:.1f}"),
-                self._fmt(order_qty),
-                self._fmt(order_qty_after),
-                self._fmt(diff_display),
-                self._fmt(prev_residue),
-                self._fmt(production_qty),
-                self._fmt(pre_production_qty),
-                self._fmt(plan_qty),
-                self._fmt(f"{plan_kg:.1f}"),
-                self._fmt(produced_qty),
-                self._fmt(remain_qty),
-                self._fmt(today_residue),
+                fmt(f"{pkg:.1f}"),
+                fmt(order_qty),
+                fmt(order_qty_after),
+                fmt(diff_display),
+                fmt(prev_residue),
+                fmt(production_qty),
+                fmt(pre_production_qty),
+                fmt(plan_qty),
+                fmt(f"{plan_kg:.1f}"),
+                fmt(produced_qty),
+                fmt(remain_qty),
+                fmt(today_residue),
+                trate_text,  # 14번: COL_TRATE
+                work_status  # 15번: COL_WORK_STATUS
             ]
 
             # 🔥 테이블 셀 생성 + CO/UserRole 저장
@@ -643,6 +671,7 @@ class OrderDashboardWidget(QWidget):
             self._product_table_item_changed_connected = True
 
         table.blockSignals(False)
+        self._apply_column_visibility_rules()
 
     def _load_raw_tab(self):
         table = self.ui.tableWidget2
@@ -699,13 +728,13 @@ class OrderDashboardWidget(QWidget):
 
             row_values = [
                 uname,  # 0 품명
-                self._fmt(stock),  # 1 재고량
-                self._fmt(order_qty),  # 2 예상발주량
-                self._fmt(order_qty_after),  # 3 최종발주량(동일 값)
-                self._fmt(prepro_qty),  # 4 선 생산량
-                self._fmt(expected_short),  # 5 예상부족량
-                self._fmt(ipgo_qty),  # 6 입고예정량
-                self._fmt(expected_stock),  # 7 예상재고
+                fmt(stock),  # 1 재고량
+                fmt(order_qty),  # 2 예상발주량
+                fmt(order_qty_after),  # 3 최종발주량(동일 값)
+                fmt(prepro_qty),  # 4 선 생산량
+                fmt(expected_short),  # 5 예상부족량
+                fmt(ipgo_qty),  # 6 입고예정량
+                fmt(expected_stock),  # 7 예상재고
             ]
 
             for col_idx, value in enumerate(row_values):
@@ -775,13 +804,13 @@ class OrderDashboardWidget(QWidget):
 
             row_values = [
                 uname,  # 0
-                self._fmt(stock),  # 1
-                self._fmt(order_qty),  # 2 예상발주량
-                self._fmt(order_qty_after),  # 3 최종발주량
-                self._fmt(prepro_qty),  # 4
-                self._fmt(expected_short),  # 5
-                self._fmt(ipgo_qty),  # 6
-                self._fmt(expected_stock),  # 7
+                fmt(stock),  # 1
+                fmt(order_qty),  # 2 예상발주량
+                fmt(order_qty_after),  # 3 최종발주량
+                fmt(prepro_qty),  # 4
+                fmt(expected_short),  # 5
+                fmt(ipgo_qty),  # 6
+                fmt(expected_stock),  # 7
             ]
 
             for col_idx, value in enumerate(row_values):
@@ -851,13 +880,13 @@ class OrderDashboardWidget(QWidget):
 
             row_values = [
                 uname,
-                self._fmt(stock),
-                self._fmt(order_qty),
-                self._fmt(order_qty_after),
-                self._fmt(prepro_qty),
-                self._fmt(expected_short),
-                self._fmt(ipgo_qty),
-                self._fmt(expected_stock),
+                fmt(stock),
+                fmt(order_qty),
+                fmt(order_qty_after),
+                fmt(prepro_qty),
+                fmt(expected_short),
+                fmt(ipgo_qty),
+                fmt(expected_stock),
             ]
 
             for col_idx, value in enumerate(row_values):
@@ -884,7 +913,7 @@ class OrderDashboardWidget(QWidget):
                     order_qty, order_qty_after,
                     prev_residue, pre_production_qty,
                     produced_qty, remain_production_qty,
-                    today_residue
+                    today_residue, work_status, trate
                 FROM ORDER_DASHBOARD
                 WHERE PK = %s
             """
@@ -904,22 +933,25 @@ class OrderDashboardWidget(QWidget):
         plan_kg = plan_qty * r["PKG"]
         remain_qty = plan_qty - r["PRODUCED_QTY"]
         diff = r["ORDER_QTY_AFTER"] - r["ORDER_QTY"]
+        trate_val = r["TRATE"] if r["TRATE"] is not None else 0
 
         values = {
             COL_VENDOR: r["RNAME"],
             COL_PRODUCT: r["UNAME"],
-            COL_PKG: self._fmt(f"{r['PKG']:.1f}"),
-            COL_ORDER: self._fmt(r["ORDER_QTY"]),
-            COL_FINAL_ORDER: self._fmt(r["ORDER_QTY_AFTER"]),
-            COL_DIFF: "" if diff == 0 else self._fmt(diff),
-            COL_PREV_RES: self._fmt(r["PREV_RESIDUE"]),
-            COL_PRODUCTION: self._fmt(production_qty),
-            COL_PRE_PROD: self._fmt(r["PRE_PRODUCTION_QTY"]),
-            COL_PLAN: self._fmt(plan_qty),
-            COL_PLAN_KG: self._fmt(f"{plan_kg:.1f}"),
-            COL_CUR_PROD: self._fmt(r["PRODUCED_QTY"]),
-            COL_REMAIN: self._fmt(remain_qty),
-            COL_TODAY_RES: self._fmt(r["TODAY_RESIDUE"]),
+            COL_PKG: fmt(f"{r['PKG']:.1f}"),
+            COL_ORDER: fmt(r["ORDER_QTY"]),
+            COL_FINAL_ORDER: fmt(r["ORDER_QTY_AFTER"]),
+            COL_DIFF: "" if diff == 0 else fmt(diff),
+            COL_PREV_RES: fmt(r["PREV_RESIDUE"]),
+            COL_PRODUCTION: fmt(production_qty),
+            COL_PRE_PROD: fmt(r["PRE_PRODUCTION_QTY"]),
+            COL_PLAN: fmt(plan_qty),
+            COL_PLAN_KG: fmt(f"{plan_kg:.1f}"),
+            COL_CUR_PROD: fmt(r["PRODUCED_QTY"]),
+            COL_REMAIN: fmt(remain_qty),
+            COL_TODAY_RES: fmt(r["TODAY_RESIDUE"]),
+            COL_WORK_STATUS: r["WORK_STATUS"] or "",
+            COL_TRATE: fmt(f"{float(trate_val):.2f}"),
         }
 
         row_idx = -1
@@ -972,13 +1004,13 @@ class OrderDashboardWidget(QWidget):
 
         values = [
             r["UNAME"],
-            self._fmt(stock),
-            self._fmt(order_qty),
-            self._fmt(order_qty_after),
-            self._fmt(prepro_qty),
-            self._fmt(expected_short),
-            self._fmt(ipgo_qty),
-            self._fmt(expected_stock),
+            fmt(stock),
+            fmt(order_qty),
+            fmt(order_qty_after),
+            fmt(prepro_qty),
+            fmt(expected_short),
+            fmt(ipgo_qty),
+            fmt(expected_stock),
         ]
 
         row_idx = -1
@@ -1031,13 +1063,13 @@ class OrderDashboardWidget(QWidget):
 
         values = [
             r["UNAME"],
-            self._fmt(stock),
-            self._fmt(order_qty),
-            self._fmt(order_qty_after),
-            self._fmt(prepro_qty),
-            self._fmt(expected_short),
-            self._fmt(ipgo_qty),
-            self._fmt(expected_stock),
+            fmt(stock),
+            fmt(order_qty),
+            fmt(order_qty_after),
+            fmt(prepro_qty),
+            fmt(expected_short),
+            fmt(ipgo_qty),
+            fmt(expected_stock),
         ]
 
         row_idx = -1
@@ -1090,13 +1122,13 @@ class OrderDashboardWidget(QWidget):
 
         values = [
             r["UNAME"],
-            self._fmt(stock),
-            self._fmt(order_qty),
-            self._fmt(order_qty_after),
-            self._fmt(prepro_qty),
-            self._fmt(expected_short),
-            self._fmt(ipgo_qty),
-            self._fmt(expected_stock),
+            fmt(stock),
+            fmt(order_qty),
+            fmt(order_qty_after),
+            fmt(prepro_qty),
+            fmt(expected_short),
+            fmt(ipgo_qty),
+            fmt(expected_stock),
         ]
 
         row_idx = -1
@@ -1137,7 +1169,7 @@ class OrderDashboardWidget(QWidget):
         except ValueError:
             QMessageBox.warning(self, "오류", "0 이상 정수만 입력 가능합니다.")
             self.ui.tableWidget1.blockSignals(True)
-            item.setText(self._fmt(0))
+            item.setText(fmt(0))
             self.ui.tableWidget1.blockSignals(False)
             new_val = 0
 
@@ -1282,778 +1314,6 @@ class OrderDashboardWidget(QWidget):
         # UI 단일 행 갱신
         self._refresh_single_vege_row(pk)
 
-    #7. DB 조회/계산 헬퍼 함수
-    def _get_homeplus_order_qty(self, co: str, sdate_str: str) -> int:
-        """
-        GWCHUL..PAN에서 해당 CO, PDATE = 날짜인 행들의 PAN 합계(박스 수).
-        """
-        conn, cur = getdb("GWCHUL")
-        try:
-            sql = """
-                SELECT ISNULL(SUM(PAN), 0) AS sum_pan
-                FROM PAN
-                WHERE CO = %s
-                  AND CONVERT(DATE, PDATE) = %s
-            """
-            df = runquery(cur, sql, [co, sdate_str])
-        finally:
-            closedb(conn)
-
-        if df is None or df.empty:
-            return 0
-
-        try:
-            val = df.iloc[0][df.columns[0]]
-            return int(val or 0)
-        except Exception:
-            return 0
-
-    def _get_emart_order_qty(self, tco: str, sdate_str: str) -> int:
-        conn, cur = getdb("GFOOD_B")
-        try:
-            # 1) TCO -> CO 매핑
-            sql_mmaster = """
-                SELECT TOP 1 CO
-                FROM MMASTER
-                WHERE TCO = %s
-            """
-            df_key = runquery(cur, sql_mmaster, [tco])
-
-            if df_key is None or df_key.empty:
-                return 0
-
-            real_co = str(df_key.iloc[0]["CO"]).strip()
-            if not real_co:
-                return 0
-
-            # 2) MPAN에서 PAN 합계
-            sql_mpan = """
-                SELECT SUM(PANKG) AS sum_pan
-                FROM MPAN
-                WHERE CO = %s
-                  AND CONVERT(DATE, SDATE) = %s
-            """
-            df = runquery(cur, sql_mpan, [real_co, sdate_str])
-        finally:
-            closedb(conn)
-
-        if df is None or df.empty:
-            return 0
-
-        try:
-            val = df.iloc[0][df.columns[0]]
-            return int(val or 0)
-        except Exception:
-            return 0
-
-    def _get_kurly_order_qty(self, tco: str, sdate_str: str) -> int:
-        conn, cur = getdb("GFOOD_B")
-        try:
-            sql_mmaster = """
-                SELECT TOP 1 CO
-                FROM MMASTER
-                WHERE TCO = %s
-            """
-            df_key = runquery(cur, sql_mmaster, [tco])
-
-            if df_key is None or df_key.empty:
-                return 0
-
-            real_co = str(df_key.iloc[0]["CO"]).strip()
-            if not real_co:
-                return 0
-
-            sql_mpan = """
-                SELECT SUM(PANKG) AS sum_pan
-                FROM MPAN
-                WHERE CO = %s
-                AND CONVERT(DATE, SDATE) = %s
-            """
-            df = runquery(cur, sql_mpan, [real_co, sdate_str])
-        finally:
-            closedb(conn)
-
-        if df is None or df.empty:
-            return 0
-
-        try:
-            val = df.iloc[0][df.columns[0]]
-            return int(val or 0)
-        except Exception:
-            return 0
-
-    def _get_coson_order_qty(self, base_co: str, sdate_str: str) -> int:
-        """
-        코스온 발주량 조회 로직
-
-        1) GWCHUL..MASTER 에서 CO = base_co 인 행의 TCO3 조회
-        2) GWCHUL..COSONC 에서 LCODE = TCO3
-           AND CONVERT(DATE, LDATE) = sdate_str 인 행의 FINAL_QTY 사용
-        """
-        conn, cur = getdb("GWCHUL")
-        try:
-            # 1) MASTER에서 TCO3 조회
-            sql_master = """
-                SELECT TOP 1 TCO3
-                FROM MASTER
-                WHERE CO = %s
-            """
-            df_key = runquery(cur, sql_master, [base_co])
-
-            if df_key is None or df_key.empty:
-                return 0
-
-            tco3 = str(df_key.iloc[0]["TCO3"]).strip()
-            if not tco3:
-                return 0
-
-            # 2) COSONC에서 FINAL_QTY 조회
-            sql_coson = """
-                SELECT TOP 1 FINAL_QTY
-                FROM COSONC
-                WHERE LCODE = %s
-                  AND CONVERT(DATE, LDATE) = %s
-            """
-            df = runquery(cur, sql_coson, [tco3, sdate_str])
-        finally:
-            closedb(conn)
-
-        if df is None or df.empty:
-            return 0
-
-        try:
-            val = df.iloc[0]["FINAL_QTY"]
-            return int(val or 0)
-        except Exception:
-            return 0
-
-    # -----------------------------------------------------
-    # (기존) 이마트 MASTER용 CO 변환 함수
-    # -----------------------------------------------------
-    def _get_emart_master_co(self, base_co: str) -> str:
-        conn, cur = getdb("GFOOD_B")
-        try:
-            sql = """
-                SELECT TOP 1 TCO
-                FROM MMASTER
-                WHERE CO = %s
-            """
-            df = runquery(cur, sql, [base_co])
-        finally:
-            closedb(conn)
-
-        if df is None or df.empty:
-            return base_co
-
-        try:
-            return str(df.iloc[0]["TCO"]).strip()
-        except Exception:
-            return base_co
-
-    # -----------------------------------------------------
-    # 생산량(팩수) 계산 헬퍼
-    # -----------------------------------------------------
-    def _get_produced_qty_packs(self, co: str, sdate_str: str, pacsu: int) -> int:
-        """
-        GFOOD_B..PAN에서
-          CH = 'C'
-          AND JNAME = '공장(양념육)'
-          AND CO = co
-          AND PDATE = sdate_str
-        인 행들의 PAN 합(박스 단위)에 PACSU를 곱해 생산 팩 수 반환.
-        """
-        try:
-            if pacsu is None or pacsu <= 0:
-                pacsu = 1
-
-            try:
-                conn, cur = getdb("GFOOD_B")
-            except Exception as e:
-                print(f"[ERROR] getdb('GFOOD_B') 실패: {e}")
-                return 0
-
-            try:
-                sql = """
-                    SELECT ISNULL(SUM(PAN), 0) AS sum_pan
-                    FROM PAN
-                    WHERE CH = 'C'
-                      AND JNAME = '공장(양념육)'
-                      AND CO = %s
-                      AND CONVERT(DATE, PDATE) = %s
-                """
-                df = runquery(cur, sql, [co, sdate_str])
-            except Exception as e:
-                print(f"[ERROR] runquery(GFOOD_B.PAN) 실패 co={co}, date={sdate_str}: {e}")
-                return 0
-            finally:
-                try:
-                    closedb(conn)
-                except Exception as e:
-                    print(f"[WARN] GFOOD_B 연결 종료 실패: {e}")
-
-            if df is None or df.empty:
-                return 0
-
-            try:
-                if "sum_pan" in df.columns:
-                    raw_val = df.iloc[0]["sum_pan"]
-                else:
-                    raw_val = df.iloc[0][df.columns[0]]
-                box_sum = int(raw_val or 0)
-            except Exception as e:
-                print(f"[ERROR] 생산량 sum_pan 파싱 실패 co={co}: {e}")
-                box_sum = 0
-
-            return box_sum * pacsu
-
-        except Exception as e:
-            print(f"[FATAL] _get_produced_qty_packs({co}, {sdate_str}) 예외: {e}")
-            return 0
-
-    # -----------------------------------------------------
-    # PACSU 조회 헬퍼
-    # -----------------------------------------------------
-    def _get_pacsu_by_co(self, co: str) -> int:
-        try:
-            conn, cur = getdb("GFOOD_B")
-        except Exception as e:
-            print(f"[ERROR] DB 연결 실패(GFOOD_B): {e}")
-            return 1
-
-        try:
-            sql = """
-                SELECT TOP 1 PACSU
-                FROM MASTER
-                WHERE CO = %s
-            """
-            df = runquery(cur, sql, [co])
-        except Exception as e:
-            print(f"[ERROR] PACSU 조회 실패 co={co}: {e}")
-            df = None
-        finally:
-            try:
-                closedb(conn)
-            except Exception:
-                pass
-
-        if df is None or df.empty:
-            return 1
-
-        try:
-            pacsu_val = df.iloc[0]["PACSU"]
-            pacsu = int(pacsu_val if pacsu_val not in (None, "") else 1)
-            if pacsu <= 0:
-                pacsu = 1
-        except:
-            pacsu = 1
-
-        return pacsu
-
-    # -----------------------------------------------------
-    # prev_residue 조회
-    # -----------------------------------------------------
-    def _get_prev_residue_from_today(self, co: str) -> int:
-        conn, cur = getdb(DB_NAME)
-        try:
-            sql = """
-                SELECT TOP 1 today_residue
-                FROM ORDER_DASHBOARD
-                WHERE co = %s
-                ORDER BY PK DESC
-            """
-            df = runquery(cur, sql, [co])
-        finally:
-            closedb(conn)
-
-        if df is None or df.empty:
-            return 0
-
-        try:
-            val = df.iloc[0][df.columns[0]]
-            return int(val or 0)
-        except:
-            return 0
-
-    def _get_stock_from_pan(self, bco: str, sdate_str: str) -> int:
-        conn, cur = getdb("GFOOD_B")
-        try:
-            sql = """
-                SELECT 
-                    SUM(A.IPGO) - SUM(A.PAN) as stock_box
-                FROM PAN A
-                WHERE A.CH <> 'M'
-                  AND A.CO = %s
-                  AND A.PDATE <= CONVERT(smalldatetime, %s)
-                  AND A.JNAME <> ''
-                  AND A.JUM = '지점'
-                  AND A.DE = 'N'
-                GROUP BY A.JNAME
-            """
-            df = runquery(cur, sql, [bco, sdate_str])
-        finally:
-            closedb(conn)
-
-        if df is None or df.empty:
-            return 0
-
-        total = 0
-        for v in df.iloc[:, 0]:
-            try:
-                if int(v) > 0:
-                    total += int(v)
-            except:
-                continue
-
-        return total
-
-    def _calc_plan_kg_by_recipe(self, df_order, recipe_keyword: str):
-        """
-        ORDER_DASHBOARD 기반 원료/소스 PLAN_KG 계산
-        기준: ORDER_QTY_AFTER
-        PLAN_PACKS = order_qty_after + pre_production_qty - prev_residue
-        PLAN_KG    = PLAN_PACKS * pkg * SA
-        """
-        if df_order is None or df_order.empty:
-            return None
-
-        df_order = df_order.copy()
-        df_order.columns = [c.upper() for c in df_order.columns]
-        df_order["CO"] = df_order["CO"].astype(str).str.strip()
-
-        co_list = df_order["CO"].unique().tolist()
-        if not co_list:
-            return None
-
-        placeholders = ",".join(["%s"] * len(co_list))
-
-        conn, cur = getdb("GFOOD_B")
-        try:
-            sql_recipe = f"""
-                SELECT CO, BCO, BUNAME, SA
-                FROM RECIPE
-                WHERE CO IN ({placeholders})
-                  AND BUNAME LIKE %s
-            """
-            params = co_list + [f"%{recipe_keyword}%"]
-            df_recipe = runquery(cur, sql_recipe, params)
-        finally:
-            closedb(conn)
-
-        if df_recipe is None or df_recipe.empty:
-            return None
-
-        df_recipe.columns = [c.upper() for c in df_recipe.columns]
-        df_recipe["CO"] = df_recipe["CO"].astype(str).str.strip()
-        df_recipe["BCO"] = df_recipe["BCO"].astype(str).str.strip()
-        df_recipe["SA"] = df_recipe["SA"].fillna(1).astype(float)
-
-        df = df_order.merge(df_recipe, how="inner", on="CO")
-        if df.empty:
-            return None
-
-        # 계산에 필요한 컬럼 기본값
-        for col in ("ORDER_QTY_AFTER", "PRE_PRODUCTION_QTY", "PREV_RESIDUE", "PKG"):
-            if col not in df.columns:
-                df[col] = 0
-
-        df["ORDER_QTY_AFTER"] = df["ORDER_QTY_AFTER"].fillna(0).astype(float)
-        df["PRE_PRODUCTION_QTY"] = df["PRE_PRODUCTION_QTY"].fillna(0).astype(float)
-        df["PREV_RESIDUE"] = df["PREV_RESIDUE"].fillna(0).astype(float)
-        df["PKG"] = df["PKG"].fillna(0).astype(float)
-
-        df["PLAN_PACKS"] = (
-                df["ORDER_QTY_AFTER"]
-                + df["PRE_PRODUCTION_QTY"]
-                - df["PREV_RESIDUE"]
-        )
-
-        # 🔥 **핵심 변경 부분: SA 곱해서 원료 필요량 계산**
-        df["PLAN_KG"] = df["PLAN_PACKS"] * df["PKG"] * df["SA"] / 100
-
-        # 음수 제거
-        df = df[df["PLAN_KG"] > 0]
-        if df.empty:
-            return None
-
-        # BCO 기준 합계
-        grouped = df.groupby(["BCO", "BUNAME"], as_index=False)["PLAN_KG"].sum()
-        return grouped
-
-    def _calc_order_qty_packs(
-            self,
-            base_co: str,
-            vendor: str,
-            sdate_str: str,
-            pacsu: int,
-    ) -> int:
-        """
-        벤더별 '최종 발주 팩 수' 공통 계산 함수
-
-        - 홈플러스: PAN(box) × PACSU → 팩
-        - 이마트  : MPAN(EA) × PACSU → 팩
-        - 마켓컬리: 박스 수 그대로 (PACSU 미적용)
-        - 코스온  : COSONC.FINAL_QTY 그대로 (PACSU 미적용)
-        """
-        vendor = (vendor or "").strip()
-
-        if pacsu is None or pacsu <= 0:
-            pacsu = 1
-
-        if vendor == "홈플러스":
-            box_qty = self._get_homeplus_order_qty(base_co, sdate_str)
-            return box_qty * pacsu
-
-        if vendor == "이마트":
-            packs = self._get_emart_order_qty(base_co, sdate_str)
-            return packs * pacsu
-
-        if vendor == "마켓컬리":
-            box_qty = self._get_kurly_order_qty(base_co, sdate_str)
-            return box_qty
-
-        if vendor == "코스온":
-            # 요청: FINAL_QTY 그대로 order_qty / order_qty_after 에 사용
-            return self._get_coson_order_qty(base_co, sdate_str)
-
-        # 정의되지 않은 벤더
-        return 0
-
-    def _recalc_dashboard_raw_keep_manual(self):
-        qdate = self.ui.dateEdit.date()
-        sdate_str = qdate.toString("yyyy-MM-dd")
-        sdate_dt = datetime(qdate.year(), qdate.month(), qdate.day(), 0, 0, 0)
-        now = datetime.now()
-
-        # ORDER_DASHBOARD
-        conn, cur = getdb(DB_NAME)
-        try:
-            sql = """
-                SELECT co, order_qty_after, pre_production_qty, prev_residue, pkg
-                FROM ORDER_DASHBOARD
-                WHERE CONVERT(DATE, sdate) = %s
-            """
-            df_order = runquery(cur, sql, [sdate_str])
-        finally:
-            closedb(conn)
-
-        if df_order is None or df_order.empty:
-            return
-
-        df_order.columns = [c.upper() for c in df_order.columns]
-        df_order["CO"] = df_order["CO"].astype(str).str.strip()
-
-        grouped = self._calc_plan_kg_by_recipe(df_order, "(정선)")
-        if grouped is None or grouped.empty:
-            return
-
-        valid_keys = {(str(r.BCO).strip(), str(r.BUNAME).strip()) for r in grouped.itertuples(index=False)}
-
-        # 기존 RAW 조회
-        conn, cur = getdb(DB_NAME)
-        try:
-            sql = """
-                SELECT PK, uname, co
-                FROM DASHBOARD_RAW
-                WHERE CONVERT(DATE, sdate) = %s
-            """
-            df_exist = runquery(cur, sql, [sdate_str])
-        finally:
-            closedb(conn)
-
-        exist_map = {}
-        if df_exist is not None and not df_exist.empty:
-            df_exist.columns = [c.upper() for c in df_exist.columns]
-            for r in df_exist.itertuples(index=False):
-                exist_map[(str(r.CO).strip(), str(r.UNAME).strip())] = r
-
-        # DELETE rows not required
-        delete_keys = set(exist_map.keys()) - valid_keys
-        if delete_keys:
-            conn, cur = getdb(DB_NAME)
-            try:
-                for co, uname in delete_keys:
-                    runquery(cur, """
-                        DELETE FROM DASHBOARD_RAW
-                        WHERE CO=%s AND UNAME=%s AND CONVERT(DATE, sdate)=%s
-                    """, [co, uname, sdate_str])
-            finally:
-                closedb(conn)
-
-        # UPDATE / INSERT
-        conn, cur = getdb(DB_NAME)
-        try:
-            for r in grouped.itertuples(index=False):
-                bco = str(r.BCO).strip()
-                buname = str(r.BUNAME).strip()
-                qty_int = int(round(float(r.PLAN_KG or 0)))
-
-                key = (bco, buname)
-                exist = exist_map.get(key)
-
-                if exist:  # -------- UPDATE --------
-                    sql_up = """
-                        UPDATE DASHBOARD_RAW
-                        SET order_qty_after = %s
-                        WHERE PK = %s
-                    """
-                    runquery(cur, sql_up, [qty_int, exist.PK])
-                    print("Updated DASHBOARD_RAW:", buname, bco, qty_int)
-                else:  # -------- INSERT --------
-                    stock_val = self._get_stock_from_pan(bco, sdate_str)
-                    sql_in = """
-                        INSERT INTO DASHBOARD_RAW (
-                            uname, co, sdate, created_time,
-                            stock, order_qty, order_qty_after,
-                            prepro_qty, ipgo_qty
-                        )
-                        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
-                    """
-                    runquery(cur, sql_in, [
-                        buname, bco, sdate_dt, now,
-                        stock_val, qty_int, qty_int,
-                        0, 0
-                    ])
-                    print("Inserted DASHBOARD_RAW:", buname, bco, qty_int)
-        finally:
-            closedb(conn)
-
-    def _recalc_dashboard_sauce_keep_manual(self):
-        qdate = self.ui.dateEdit.date()
-        sdate_str = qdate.toString("yyyy-MM-dd")
-        sdate_dt = datetime(qdate.year(), qdate.month(), qdate.day(), 0, 0, 0)
-        now = datetime.now()
-
-        conn, cur = getdb(DB_NAME)
-        try:
-            sql = """
-                SELECT co, order_qty_after, pre_production_qty,
-                       prev_residue, pkg
-                FROM ORDER_DASHBOARD
-                WHERE CONVERT(DATE, sdate) = %s
-            """
-            df_order = runquery(cur, sql, [sdate_str])
-        finally:
-            closedb(conn)
-
-        if df_order is None or df_order.empty:
-            return
-
-        df_order.columns = [c.upper() for c in df_order.columns]
-        df_order["CO"] = df_order["CO"].astype(str).str.strip()
-
-        grouped = self._calc_plan_kg_by_recipe(df_order, "소스")
-        if grouped is None or grouped.empty:
-            return
-
-        valid_keys = {(str(r.BCO).strip(), str(r.BUNAME).strip()) for r in grouped.itertuples(index=False)}
-
-        conn, cur = getdb(DB_NAME)
-        try:
-            sql = """
-                SELECT PK, uname, co
-                FROM DASHBOARD_SAUCE
-                WHERE CONVERT(DATE, sdate) = %s
-            """
-            df_exist = runquery(cur, sql, [sdate_str])
-        finally:
-            closedb(conn)
-
-        exist_map = {}
-        if df_exist is not None and not df_exist.empty:
-            df_exist.columns = [c.upper() for c in df_exist.columns]
-            for r in df_exist.itertuples(index=False):
-                exist_map[(str(r.CO).strip(), str(r.UNAME).strip())] = r
-
-        # DELETE
-        delete_keys = set(exist_map.keys()) - valid_keys
-        if delete_keys:
-            conn, cur = getdb(DB_NAME)
-            try:
-                for co, uname in delete_keys:
-                    runquery(cur, """
-                        DELETE FROM DASHBOARD_SAUCE
-                        WHERE CO=%s AND UNAME=%s AND CONVERT(DATE, sdate)=%s
-                    """, [co, uname, sdate_str])
-            finally:
-                closedb(conn)
-
-        # UPDATE / INSERT
-        conn, cur = getdb(DB_NAME)
-        try:
-            for r in grouped.itertuples(index=False):
-                bco = str(r.BCO).strip()
-                buname = str(r.BUNAME).strip()
-                qty_int = int(round(float(r.PLAN_KG or 0)))
-
-                key = (bco, buname)
-                exist = exist_map.get(key)
-
-                if exist:
-                    sql_up = """
-                        UPDATE DASHBOARD_SAUCE
-                        SET order_qty_after = %s
-                        WHERE PK = %s
-                    """
-                    runquery(cur, sql_up, [qty_int, exist.PK])
-                else:
-                    stock_val = self._get_stock_from_pan(bco, sdate_str)
-                    sql_in = """
-                        INSERT INTO DASHBOARD_SAUCE (
-                            uname, co, sdate, created_time,
-                            stock, order_qty, order_qty_after,
-                            prepro_qty, ipgo_qty
-                        )
-                        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
-                    """
-                    runquery(cur, sql_in, [
-                        buname, bco, sdate_dt, now,
-                        stock_val, qty_int, qty_int,
-                        0, 0
-                    ])
-        finally:
-            closedb(conn)
-
-    def _recalc_dashboard_vege_keep_manual(self):
-        qdate = self.ui.dateEdit.date()
-        sdate_str = qdate.toString("yyyy-MM-dd")
-        sdate_dt = datetime(qdate.year(), qdate.month(), qdate.day(), 0, 0, 0)
-        now = datetime.now()
-
-        VEGE_BCO_LIST = ["720192", "700122", "720094"]
-
-        # ORDER_DASHBOARD
-        conn, cur = getdb(DB_NAME)
-        try:
-            sql = """
-                SELECT co, order_qty_after, pre_production_qty,
-                       prev_residue, pkg
-                FROM ORDER_DASHBOARD
-                WHERE CONVERT(DATE, sdate) = %s
-            """
-            df_order = runquery(cur, sql, [sdate_str])
-        finally:
-            closedb(conn)
-
-        if df_order is None or df_order.empty:
-            return
-
-        df_order.columns = [c.upper() for c in df_order.columns]
-        df_order["CO"] = df_order["CO"].astype(str).str.strip()
-
-        co_list = df_order["CO"].unique().tolist()
-        if not co_list:
-            return
-
-        # 레시피 조회
-        conn, cur = getdb("GFOOD_B")
-        try:
-            sql = f"""
-                SELECT CO, BCO, BUNAME, SA
-                FROM RECIPE
-                WHERE BCO IN ({','.join(['%s'] * len(VEGE_BCO_LIST))})
-                  AND CO IN ({','.join(['%s'] * len(co_list))})
-            """
-            params = VEGE_BCO_LIST + co_list
-            df_recipe = runquery(cur, sql, params)
-        finally:
-            closedb(conn)
-
-        if df_recipe is None or df_recipe.empty:
-            return
-
-        df_recipe.columns = [c.upper() for c in df_recipe.columns]
-        df_recipe["CO"] = df_recipe["CO"].astype(str)
-        df_recipe["BCO"] = df_recipe["BCO"].astype(str)
-
-        df = df_order.merge(df_recipe, on="CO", how="inner")
-        if df.empty:
-            return
-
-        df["PLAN_KG"] = (
-                                df["ORDER_QTY_AFTER"].fillna(0).astype(float)
-                                + df["PRE_PRODUCTION_QTY"].fillna(0).astype(float)
-                                - df["PREV_RESIDUE"].fillna(0).astype(float)
-                        ) * df["PKG"].fillna(0).astype(float)
-
-        df = df[df["PLAN_KG"] > 0]
-        if df.empty:
-            return
-
-        df["VEGE_KG"] = df["PLAN_KG"] * df["SA"].fillna(0).astype(float)
-        df = df[df["VEGE_KG"] > 0]
-        if df.empty:
-            return
-
-        grouped = df.groupby(["BCO", "BUNAME"], as_index=False)["VEGE_KG"].sum()
-
-        valid_keys = {(str(r["BCO"]).strip(), str(r["BUNAME"]).strip()) for _, r in grouped.iterrows()}
-
-        # 기존 VEGE 조회
-        conn, cur = getdb(DB_NAME)
-        try:
-            sql = """
-                SELECT PK, uname, co
-                FROM DASHBOARD_VEGE
-                WHERE CONVERT(DATE, sdate) = %s
-            """
-            df_exist = runquery(cur, sql, [sdate_str])
-        finally:
-            closedb(conn)
-
-        exist_map = {}
-        if df_exist is not None and not df_exist.empty:
-            df_exist.columns = [c.upper() for c in df_exist.columns]
-            for r in df_exist.itertuples(index=False):
-                exist_map[(str(r.CO).strip(), str(r.UNAME).strip())] = r
-
-        delete_keys = set(exist_map.keys()) - valid_keys
-        if delete_keys:
-            conn, cur = getdb(DB_NAME)
-            try:
-                for co, uname in delete_keys:
-                    runquery(cur, """
-                        DELETE FROM DASHBOARD_VEGE
-                        WHERE CO=%s AND UNAME=%s AND CONVERT(DATE, sdate)=%s
-                    """, [co, uname, sdate_str])
-            finally:
-                closedb(conn)
-
-        # UPDATE / INSERT
-        conn, cur = getdb(DB_NAME)
-        try:
-            for _, r in grouped.iterrows():
-                bco = str(r["BCO"]).strip()
-                buname = str(r["BUNAME"]).strip()
-                qty_int = int(round(float(r["VEGE_KG"] or 0)))
-
-                key = (bco, buname)
-                exist = exist_map.get(key)
-
-                if exist:
-                    sql = """
-                        UPDATE DASHBOARD_VEGE
-                        SET order_qty_after = %s
-                        WHERE PK = %s
-                    """
-                    runquery(cur, sql, [qty_int, exist.PK])
-                else:
-                    stock_val = self._get_stock_from_pan(bco, sdate_str)
-                    sql = """
-                        INSERT INTO DASHBOARD_VEGE (
-                            uname, co, sdate, created_time,
-                            stock, order_qty, order_qty_after,
-                            prepro_qty, ipgo_qty
-                        )
-                        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
-                    """
-                    runquery(cur, sql, [
-                        buname, bco, sdate_dt, now,
-                        stock_val, qty_int, qty_int,
-                        0, 0
-                    ])
-        finally:
-            closedb(conn)
-
     #8. 대시보드 데이터 가공
     def _dashboard_raw_from_dashboard(self):
         """
@@ -2110,7 +1370,7 @@ class OrderDashboardWidget(QWidget):
         df_order["CO"] = df_order["CO"].astype(str).str.strip()
 
         # STEP 2) 레시피 기반 PLAN_KG 집계 (정선)
-        grouped = self._calc_plan_kg_by_recipe(df_order, "(정선)")
+        grouped = calc_plan_kg_by_recipe(df_order, "(정선)")
 
         print("\n[DEBUG] grouped 결과:")
         print(grouped)
@@ -2153,7 +1413,7 @@ class OrderDashboardWidget(QWidget):
             if qty_int <= 0:
                 continue
 
-            stock_val = self._get_stock_from_pan(bco, sdate_str)
+            stock_val = get_stock_from_pan(bco, sdate_str)
 
             rows.append({
                 "uname": buname,
@@ -2235,7 +1495,7 @@ class OrderDashboardWidget(QWidget):
         df_order["CO"] = df_order["CO"].astype(str).str.strip()
 
         # STEP 2) 레시피 기반 PLAN_KG (소스)
-        grouped = self._calc_plan_kg_by_recipe(df_order, "소스")
+        grouped = calc_plan_kg_by_recipe(df_order, "소스")
 
         print("\n[DEBUG] grouped 결과:")
         print(grouped)
@@ -2279,7 +1539,7 @@ class OrderDashboardWidget(QWidget):
             if qty_int <= 0:
                 continue
 
-            stock_val = self._get_stock_from_pan(bco, sdate_str)
+            stock_val = get_stock_from_pan(bco, sdate_str)
 
             rows.append({
                 "uname": buname,
@@ -2463,7 +1723,7 @@ class OrderDashboardWidget(QWidget):
             if qty_int <= 0:
                 continue
 
-            stock_val = self._get_stock_from_pan(bco, sdate_str)
+            stock_val = get_stock_from_pan(bco, sdate_str)
 
             rows.append({
                 "uname": buname,
@@ -2555,17 +1815,17 @@ class OrderDashboardWidget(QWidget):
                 if pacsu <= 0:
                     pacsu = 1
 
-                prev_residue = self._get_prev_residue_from_today(base_co)
+                prev_residue = get_prev_residue_from_today(base_co)
 
                 # 🔹 벤더별 발주 팩 수 공통 계산
-                order_qty_packs = self._calc_order_qty_packs(
+                order_qty_packs = calc_order_qty_packs(
                     base_co=base_co,
                     vendor=vendor,
                     sdate_str=sdate_str,
                     pacsu=pacsu,
                 )
 
-                produced_qty = self._get_produced_qty_packs(base_co, sdate_str, pacsu)
+                produced_qty = get_produced_qty_packs(base_co, sdate_str, pacsu)
 
                 rows.append({
                     "bigo": "",
@@ -2767,9 +2027,9 @@ class OrderDashboardWidget(QWidget):
 
         # 🔁 RAW/SAUCE/VEGE 재집계
         try:
-            self._recalc_dashboard_raw_keep_manual()
-            self._recalc_dashboard_sauce_keep_manual()
-            self._recalc_dashboard_vege_keep_manual()
+            recalc_dashboard_raw_keep_manual(sdate_str)
+            recalc_dashboard_sauce_keep_manual(sdate_str)
+            recalc_dashboard_vege_keep_manual(sdate_str)
         except Exception as e:
             QMessageBox.critical(self, "재집계 오류", str(e))
             return
@@ -2882,13 +2142,13 @@ class OrderDashboardWidget(QWidget):
 
                     # PACSU 조회
                     try:
-                        pacsu = self._get_pacsu_by_co(co_str)
+                        pacsu = get_pacsu_by_co(co_str)
                     except Exception as e:
-                        print(f"[ERROR] _get_pacsu_by_co({co_str}) 예외: {e}")
+                        print(f"[ERROR] get_pacsu_by_co({co_str}) 예외: {e}")
                         pacsu = 1
 
                     # 생산 팩 수 계산
-                    produced_qty = self._get_produced_qty_packs(co_str, sdate_str, pacsu)
+                    produced_qty = get_produced_qty_packs(co_str, sdate_str, pacsu)
 
                     # produced_qty 업데이트
                     try:
@@ -2983,13 +2243,13 @@ class OrderDashboardWidget(QWidget):
                 base_co = str(base_co).strip()
 
                 # PACSU 조회 (박스 → 팩 환산기)
-                pacsu = self._get_pacsu_by_co(base_co)
+                pacsu = get_pacsu_by_co(base_co)
                 if pacsu is None or pacsu <= 0:
                     pacsu = 1
 
                 # 🔹 벤더별 발주 팩 수 공통 계산 (코스온 포함)
                 new_qty_packs = int(
-                    self._calc_order_qty_packs(
+                    calc_order_qty_packs(
                         base_co=base_co,
                         vendor=vendor,
                         sdate_str=sdate_str,
@@ -3042,9 +2302,9 @@ class OrderDashboardWidget(QWidget):
         finally:
             closedb(conn)
 
-        self._recalc_dashboard_raw_keep_manual()
-        self._recalc_dashboard_sauce_keep_manual()
-        self._recalc_dashboard_vege_keep_manual()
+        recalc_dashboard_raw_keep_manual(sdate_str)
+        recalc_dashboard_sauce_keep_manual(sdate_str)
+        recalc_dashboard_vege_keep_manual(sdate_str)
 
         QMessageBox.information(
             self,
@@ -3055,6 +2315,64 @@ class OrderDashboardWidget(QWidget):
 
         # 제품 탭 갱신
         self._load_product_tab()
+
+    def on_click_complete_product(self):
+        """
+        제품 탭에서 선택한 행의 work_state 값을 '완료'로 업데이트하고,
+        테이블을 즉시 반영한다.
+        """
+        table = self.ui.tableWidget1
+
+        # 선택된 행 확인
+        selected_rows = sorted({idx.row() for idx in table.selectedIndexes()})
+        if not selected_rows:
+            QMessageBox.information(self, "안내", "완료 처리할 제품 행을 선택하세요.")
+            return
+
+        # 여러개 선택 가능 → 하나씩 처리
+        qdate = self.ui.dateEdit.date()
+        sdate_str = qdate.toString("yyyy-MM-dd")
+
+        conn, cur = getdb(DB_NAME)
+
+        try:
+            for row in selected_rows:
+                item = table.item(row, 0)  # PK 저장된 첫 컬럼
+                if not item:
+                    continue
+
+                pk = item.data(Qt.UserRole)
+                if not pk:
+                    continue
+
+                # ─────────────── UPDATE 실행 ───────────────
+                runquery(
+                    cur,
+                    """
+                    UPDATE ORDER_DASHBOARD
+                    SET work_status = '완료'
+                    WHERE PK = %s
+                    """,
+                    [pk],
+                )
+
+                # ─────────────── UI 반영 ───────────────
+                # 구성상 work_state 컬럼이 마지막(예: COL_WORK_STATE)
+                work_state_col = COL_WORK_STATUS  # 14번
+                item_ws = table.item(row, work_state_col)
+                if item_ws:
+                    table.blockSignals(True)
+                    item_ws.setText("완료")
+                    table.blockSignals(False)
+
+                # 정확하게 다시 계산하려면:
+                self._refresh_single_row(pk)
+
+        finally:
+            closedb(conn)
+
+        QMessageBox.information(self, "완료", "선택된 제품의 작업 상태가 '완료'로 변경되었습니다.")
+
 
     def on_click_export_excel(self):
         """

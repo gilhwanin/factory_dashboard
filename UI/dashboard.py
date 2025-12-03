@@ -389,6 +389,25 @@ class Ui_Form(object):
         self.control_frame.setObjectName("control_frame")
         self.horizontalLayout_3 = QtWidgets.QHBoxLayout(self.control_frame)
         self.horizontalLayout_3.setObjectName("horizontalLayout_3")
+        self.btn_complete = QtWidgets.QPushButton(self.control_frame)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.btn_complete.sizePolicy().hasHeightForWidth())
+        self.btn_complete.setSizePolicy(sizePolicy)
+        font = QtGui.QFont()
+        font.setFamily("Noto Sans KR Medium")
+        font.setPointSize(18)
+        self.btn_complete.setFont(font)
+        self.btn_complete.setStyleSheet("QPushButton {\n"
+"    background-color: #d7e9f8;\n"
+"    border: 1px solid #9fbad2;\n"
+"    padding: 6px 12px;\n"
+"    border-radius: 6px;\n"
+"    color: #1f2d3d;\n"
+"}")
+        self.btn_complete.setObjectName("btn_complete")
+        self.horizontalLayout_3.addWidget(self.btn_complete)
         self.btn_add = QtWidgets.QPushButton(self.control_frame)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
@@ -400,6 +419,13 @@ class Ui_Form(object):
         font.setFamily("Noto Sans KR Medium")
         font.setPointSize(18)
         self.btn_add.setFont(font)
+        self.btn_add.setStyleSheet("QPushButton {\n"
+"    background-color: #e9e3da;\n"
+"    border: 1px solid #bfb7ac;\n"
+"    padding: 6px 12px;\n"
+"    border-radius: 6px;\n"
+"    color: #2b2a28;\n"
+"}")
         self.btn_add.setObjectName("btn_add")
         self.horizontalLayout_3.addWidget(self.btn_add)
         self.btn_del = QtWidgets.QPushButton(self.control_frame)
@@ -413,6 +439,13 @@ class Ui_Form(object):
         font.setFamily("Noto Sans KR Medium")
         font.setPointSize(18)
         self.btn_del.setFont(font)
+        self.btn_del.setStyleSheet("QPushButton {\n"
+"    background-color: #e9e3da;\n"
+"    border: 1px solid #bfb7ac;\n"
+"    padding: 6px 12px;\n"
+"    border-radius: 6px;\n"
+"    color: #2b2a28;\n"
+"}")
         self.btn_del.setObjectName("btn_del")
         self.horizontalLayout_3.addWidget(self.btn_del)
         self.btn_del_row = QtWidgets.QPushButton(self.control_frame)
@@ -426,6 +459,13 @@ class Ui_Form(object):
         font.setFamily("Noto Sans KR Medium")
         font.setPointSize(18)
         self.btn_del_row.setFont(font)
+        self.btn_del_row.setStyleSheet("QPushButton {\n"
+"    background-color: #e9e3da;\n"
+"    border: 1px solid #bfb7ac;\n"
+"    padding: 6px 12px;\n"
+"    border-radius: 6px;\n"
+"    color: #2b2a28;\n"
+"}")
         self.btn_del_row.setObjectName("btn_del_row")
         self.horizontalLayout_3.addWidget(self.btn_del_row)
         self.btn_update = QtWidgets.QPushButton(self.control_frame)
@@ -439,6 +479,13 @@ class Ui_Form(object):
         font.setFamily("Noto Sans KR Medium")
         font.setPointSize(18)
         self.btn_update.setFont(font)
+        self.btn_update.setStyleSheet("QPushButton {\n"
+"    background-color: #d9f1e7;\n"
+"    border: 1px solid #94c5ad;\n"
+"    padding: 6px 12px;\n"
+"    border-radius: 6px;\n"
+"    color: #1f2d3d;\n"
+"}")
         self.btn_update.setObjectName("btn_update")
         self.horizontalLayout_3.addWidget(self.btn_update)
         self.btn_update_product = QtWidgets.QPushButton(self.control_frame)
@@ -452,6 +499,13 @@ class Ui_Form(object):
         font.setFamily("Noto Sans KR Medium")
         font.setPointSize(18)
         self.btn_update_product.setFont(font)
+        self.btn_update_product.setStyleSheet("QPushButton {\n"
+"    background-color: #d9f1e7;\n"
+"    border: 1px solid #94c5ad;\n"
+"    padding: 6px 12px;\n"
+"    border-radius: 6px;\n"
+"    color: #1f2d3d;\n"
+"}")
         self.btn_update_product.setObjectName("btn_update_product")
         self.horizontalLayout_3.addWidget(self.btn_update_product)
         self.btn_excel = QtWidgets.QPushButton(self.control_frame)
@@ -515,6 +569,7 @@ class Ui_Form(object):
         self.btn_raw.setText(_translate("Form", "원료"))
         self.btn_sauce.setText(_translate("Form", "소스"))
         self.btn_vege.setText(_translate("Form", "야채"))
+        self.btn_complete.setText(_translate("Form", "작업완료"))
         self.btn_add.setText(_translate("Form", "표 생성"))
         self.btn_del.setText(_translate("Form", "표 삭제"))
         self.btn_del_row.setText(_translate("Form", "행 삭제"))

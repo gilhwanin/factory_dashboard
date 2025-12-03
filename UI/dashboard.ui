@@ -641,6 +641,34 @@ QPushButton:pressed {
      </property>
      <layout class="QHBoxLayout" name="horizontalLayout_3">
       <item>
+       <widget class="QPushButton" name="btn_complete">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="font">
+         <font>
+          <family>Noto Sans KR Medium</family>
+          <pointsize>18</pointsize>
+         </font>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">QPushButton {
+    background-color: #d7e9f8;
+    border: 1px solid #9fbad2;
+    padding: 6px 12px;
+    border-radius: 6px;
+    color: #1f2d3d;
+}</string>
+        </property>
+        <property name="text">
+         <string>작업완료</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QPushButton" name="btn_add">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
@@ -659,6 +687,15 @@ QPushButton:pressed {
           <family>Noto Sans KR Medium</family>
           <pointsize>18</pointsize>
          </font>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">QPushButton {
+    background-color: #e9e3da;
+    border: 1px solid #bfb7ac;
+    padding: 6px 12px;
+    border-radius: 6px;
+    color: #2b2a28;
+}</string>
         </property>
         <property name="text">
          <string>표 생성</string>
@@ -685,6 +722,15 @@ QPushButton:pressed {
           <pointsize>18</pointsize>
          </font>
         </property>
+        <property name="styleSheet">
+         <string notr="true">QPushButton {
+    background-color: #e9e3da;
+    border: 1px solid #bfb7ac;
+    padding: 6px 12px;
+    border-radius: 6px;
+    color: #2b2a28;
+}</string>
+        </property>
         <property name="text">
          <string>표 삭제</string>
         </property>
@@ -709,6 +755,15 @@ QPushButton:pressed {
           <family>Noto Sans KR Medium</family>
           <pointsize>18</pointsize>
          </font>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">QPushButton {
+    background-color: #e9e3da;
+    border: 1px solid #bfb7ac;
+    padding: 6px 12px;
+    border-radius: 6px;
+    color: #2b2a28;
+}</string>
         </property>
         <property name="text">
          <string>행 삭제</string>
@@ -735,6 +790,15 @@ QPushButton:pressed {
           <pointsize>18</pointsize>
          </font>
         </property>
+        <property name="styleSheet">
+         <string notr="true">QPushButton {
+    background-color: #d9f1e7;
+    border: 1px solid #94c5ad;
+    padding: 6px 12px;
+    border-radius: 6px;
+    color: #1f2d3d;
+}</string>
+        </property>
         <property name="text">
          <string>발주량 갱신</string>
         </property>
@@ -759,6 +823,15 @@ QPushButton:pressed {
           <family>Noto Sans KR Medium</family>
           <pointsize>18</pointsize>
          </font>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">QPushButton {
+    background-color: #d9f1e7;
+    border: 1px solid #94c5ad;
+    padding: 6px 12px;
+    border-radius: 6px;
+    color: #1f2d3d;
+}</string>
         </property>
         <property name="text">
          <string>생산량 갱신</string>
