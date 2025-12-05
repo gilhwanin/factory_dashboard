@@ -4,11 +4,12 @@
 # -----------------------------------------------------
 
 from datetime import datetime
-import pandas as pd
 
 # 🔥 기존 프로젝트에서 이미 존재한다고 가정
 from UTIL.db_handler import getdb, runquery, closedb
 DB_NAME = "GP"
+
+
 # -----------------------------------------------------
 # 홈플러스 발주량 조회
 # -----------------------------------------------------
@@ -32,7 +33,6 @@ def get_homeplus_order_qty(co: str, sdate_str: str) -> int:
         return int(df.iloc[0, 0] or 0)
     except:
         return 0
-
 
 
 # -----------------------------------------------------
@@ -73,7 +73,6 @@ def get_emart_order_qty(tco: str, sdate_str: str) -> int:
         return 0
 
 
-
 # -----------------------------------------------------
 # 마켓컬리 발주량 조회
 # -----------------------------------------------------
@@ -110,7 +109,6 @@ def get_kurly_order_qty(tco: str, sdate_str: str) -> int:
         return int(df.iloc[0, 0] or 0)
     except:
         return 0
-
 
 
 # -----------------------------------------------------
@@ -151,6 +149,116 @@ def get_coson_order_qty(base_co: str, sdate_str: str) -> int:
         return int(df.iloc[0, 0] or 0)
     except:
         return 0
+
+import pandas as pd
+from datetime import datetime, timedelta
+from UTIL.db_handler import getdb, runquery, closedb
+
+
+# ------------------------------
+# 매핑 테이블
+# ------------------------------
+COSTCO_META = {
+    "501998": {"type": "일반", "pack_weight": 0,   "day_adj": 1, "mon_adj": -1, "sun_prod": False},
+    "520033": {"type": "일반", "pack_weight": 0,   "day_adj": 1, "mon_adj": -1, "sun_prod": False},
+    "520427": {"type": "자율", "pack_weight": 2.6, "day_adj": 1, "mon_adj": 0,  "sun_prod": True},
+    "520261": {"type": "자율", "pack_weight": 2.3, "day_adj": 0, "mon_adj": 0,  "sun_prod": True},
+    "520513": {"type": "자율", "pack_weight": 2.3, "day_adj": 0, "mon_adj": 0,  "sun_prod": True},
+}
+
+
+def get_costco_order_qty(base_co: str, sdate_str: str) -> int:
+    """
+    Costco 발주량 계산 (DEBUG 버전)
+    """
+
+    print("\n==========[COSTCO DEBUG START]============")
+    print(f"[INPUT] base_co = {base_co}, sdate_str = {sdate_str}")
+
+    meta = COSTCO_META.get(base_co)
+    print(f"[META] {meta}")
+
+    if meta is None:
+        print("[STOP] meta 없음 → 0 리턴")
+        return 0
+
+    # ------------------------------
+    # 날짜 계산
+    # ------------------------------
+    sdate = datetime.strptime(sdate_str, "%Y-%m-%d")
+    print(f"[DATE] 원본 입고일 = {sdate}")
+
+    # 1) 기본 입고일 보정
+    target_date = sdate + timedelta(days=meta["day_adj"])
+    print(f"[DATE] 기본 보정(+{meta['day_adj']}) = {target_date}")
+
+    # 2) 월요일 보정
+    if target_date.weekday() == 0:  # Monday
+        print(f"[DATE] 월요일 감지 → 월요일보정({meta['mon_adj']}) 적용")
+        target_date += timedelta(days=meta["mon_adj"])
+
+    print(f"[DATE] 최종 보정 날짜 = {target_date} (weekday={target_date.weekday()})")
+
+    # 3) 일요일 생산 불가 처리
+    if target_date.weekday() == 6:  # Sunday
+        print("[DATE] 최종 조회일이 일요일임")
+        if not meta["sun_prod"]:
+            print("[STOP] 일요일 생산 불가 상품 → 발주량 = 0")
+            return 0
+        else:
+            print("[INFO] 일요일 생산 허용 → 계속 진행")
+
+    target_date_str = target_date.strftime("%Y-%m-%d")
+    print(f"[DATE] 최종 조회일 문자열 = {target_date_str}")
+
+    # ------------------------------
+    # COS_B 조회
+    # ------------------------------
+    print("\n[DB] COS_B 조회 SQL 실행")
+    conn, cur = getdb("GWCHUL")
+
+    try:
+        sql = """
+            SELECT ISNULL(SUM(CONVERT(int, C17)), 0) AS sum_pack
+            FROM COS_B
+            WHERE REPLACE(RTRIM(LTRIM(C29)), ' ', '') = %s
+              AND CONVERT(DATE, C06) = %s
+        """
+        print(f"[DB] SQL param = base_co={base_co}, C06={target_date_str}")
+        df = runquery(cur, sql, [base_co, target_date_str])
+
+    finally:
+        closedb(conn)
+
+    if df is None or df.empty:
+        print("[DB] 조회 결과 없음(df empty) → 0")
+        return 0
+
+    total_pack = int(df.iloc[0, 0] or 0)
+    print(f"[DB RESULT] sum_pack(raw) = {total_pack}")
+
+    # ------------------------------
+    # 자율 유형 처리
+    # ------------------------------
+    if meta["type"] == "자율":
+        pw = meta["pack_weight"]
+        print(f"[TYPE] 자율 유형. 팩중량 = {pw}")
+        if pw > 0:
+            final_qty = int(total_pack / pw)
+            print(f"[CALC] total_pack / {pw} = {final_qty}")
+            print("==========[COSTCO DEBUG END]============\n")
+            return final_qty
+        else:
+            print("[ERROR] pack_weight = 0 이므로 나누기 불가 → original pack 사용")
+
+    # ------------------------------
+    # 일반 유형
+    # ------------------------------
+    print(f"[TYPE] 일반 유형. 발주량 = {total_pack}")
+    print("==========[COSTCO DEBUG END]============\n")
+    return total_pack
+
+
 
 
 # -----------------------------------------------------
@@ -233,7 +341,7 @@ def get_produced_qty_packs(co: str, sdate_str: str, pacsu: int) -> int:
         return 0
 
     try:
-        box_sum = int(df.iloc[0][0] or 0)
+        box_sum = int(df.iloc[0, 0] or 0)
     except:
         box_sum = 0
 
@@ -244,7 +352,7 @@ def get_produced_qty_packs(co: str, sdate_str: str, pacsu: int) -> int:
 # prev_residue 조회
 # -----------------------------------------------------
 def get_prev_residue_from_today(co: str) -> int:
-    conn, cur = getdb("GP")  # 🔥 사용 "GP" 알아서 맞춰주세요
+    conn, cur = getdb("GP")
     try:
         sql = """
             SELECT TOP 1 today_residue
@@ -260,7 +368,7 @@ def get_prev_residue_from_today(co: str) -> int:
         return 0
 
     try:
-        return int(df.iloc[0][0] or 0)
+        return int(df.iloc[0, 0] or 0)
     except:
         return 0
 
@@ -302,39 +410,69 @@ def get_stock_from_pan(bco: str, sdate_str: str) -> int:
 
 
 # -----------------------------------------------------
-# 레시피 기반 PLAN_KG 계산
+# 레시피 기반 PLAN_KG 계산 (PRODUCTION_PLAN 사용)
 # -----------------------------------------------------
-def calc_plan_kg_by_recipe(df_order, recipe_keyword: str):
+def calc_plan_kg_by_recipe(df_order, recipe_keyword: str, bco_list: list = None):
     """
     ORDER_DASHBOARD 기반 원료/소스용 PLAN_KG 계산
+    PLAN_PACKS = PRODUCTION_PLAN
+
+    bco_list: BCO가 이 리스트에 포함되면 OR 조건으로 RECIPE에서 조회됨
+              (예: 원료/소스 외에 야채 등 별도 BCO 강제 포함)
     """
+
     if df_order is None or df_order.empty:
+        print("[PLAN_KG] df_order is empty → return None")
         return None
 
     df_order = df_order.copy()
     df_order.columns = [c.upper() for c in df_order.columns]
     df_order["CO"] = df_order["CO"].astype(str).str.strip()
 
+    print(f"[PLAN_KG] df_order rows = {len(df_order)}")
+    print(f"[PLAN_KG] recipe_keyword = {recipe_keyword}")
+    print(f"[PLAN_KG] bco_list = {bco_list}")
+
     co_list = df_order["CO"].unique().tolist()
     if not co_list:
+        print("[PLAN_KG] no CO list → return None")
         return None
 
     placeholders = ",".join(["%s"] * len(co_list))
 
+    # -----------------------------------------------------
+    # 1) RECIPE 조회 조건 동적 구성
+    # -----------------------------------------------------
+    where_clause = f"BUNAME LIKE %s"
+
+    params = co_list + [f"%{recipe_keyword}%"]
+
+    # BCO 리스트 조건 추가
+    if bco_list:
+        bco_placeholders = ",".join(["%s"] * len(bco_list))
+        where_clause = f"({where_clause} OR BCO IN ({bco_placeholders}))"
+        params.extend(bco_list)
+
+    # -----------------------------------------------------
+    # 최종 SQL 구성
+    # -----------------------------------------------------
+    sql = f"""
+        SELECT CO, BCO, BUNAME, SA
+        FROM RECIPE
+        WHERE CO IN ({placeholders})
+          AND {where_clause}
+    """
+
     conn, cur = getdb("GFOOD_B")
     try:
-        sql = f"""
-            SELECT CO, BCO, BUNAME, SA
-            FROM RECIPE
-            WHERE CO IN ({placeholders})
-              AND BUNAME LIKE %s
-        """
-        params = co_list + [f"%{recipe_keyword}%"]
         df_recipe = runquery(cur, sql, params)
     finally:
         closedb(conn)
 
+    print("[PLAN_KG] SQL params =", params)
+
     if df_recipe is None or df_recipe.empty:
+        print("[PLAN_KG] df_recipe is empty → return None")
         return None
 
     df_recipe.columns = [c.upper() for c in df_recipe.columns]
@@ -342,33 +480,52 @@ def calc_plan_kg_by_recipe(df_order, recipe_keyword: str):
     df_recipe["BCO"] = df_recipe["BCO"].astype(str).str.strip()
     df_recipe["SA"] = df_recipe["SA"].fillna(1).astype(float)
 
+    print(f"[PLAN_KG] RECIPE rows = {len(df_recipe)}")
+
+    # -----------------------------------------------------
+    # 2) MERGE
+    # -----------------------------------------------------
     df = df_order.merge(df_recipe, on="CO", how="inner")
     if df.empty:
+        print("[PLAN_KG] merge result empty → return None")
         return None
 
-    for col in ("ORDER_QTY_AFTER", "PRE_PRODUCTION_QTY", "PREV_RESIDUE", "PKG"):
-        if col not in df.columns:
-            df[col] = 0
+    print(f"[PLAN_KG] merged rows = {len(df)}")
 
-    df["ORDER_QTY_AFTER"] = df["ORDER_QTY_AFTER"].fillna(0).astype(float)
-    df["PRE_PRODUCTION_QTY"] = df["PRE_PRODUCTION_QTY"].fillna(0).astype(float)
-    df["PREV_RESIDUE"] = df["PREV_RESIDUE"].fillna(0).astype(float)
+    # -----------------------------------------------------
+    # 3) PLAN_PACKS = PRODUCTION_PLAN
+    # -----------------------------------------------------
+    if "PRODUCTION_PLAN" not in df.columns:
+        df["PRODUCTION_PLAN"] = 0
+
+    df["PRODUCTION_PLAN"] = df["PRODUCTION_PLAN"].fillna(0).astype(float)
     df["PKG"] = df["PKG"].fillna(0).astype(float)
 
-    df["PLAN_PACKS"] = (
-        df["ORDER_QTY_AFTER"]
-        + df["PRE_PRODUCTION_QTY"]
-        - df["PREV_RESIDUE"]
-    )
+    df["PLAN_PACKS"] = df["PRODUCTION_PLAN"]
 
-    # KG 계산
+    print("[PLAN_KG] PLAN_PACKS sample:", df["PLAN_PACKS"].head().tolist())
+
+    # -----------------------------------------------------
+    # 4) PLAN_KG 계산
+    # -----------------------------------------------------
     df["PLAN_KG"] = df["PLAN_PACKS"] * df["PKG"] * df["SA"] / 100
+
+    print("[PLAN_KG] PLAN_KG sample:", df["PLAN_KG"].head().tolist())
 
     df = df[df["PLAN_KG"] > 0]
     if df.empty:
+        print("[PLAN_KG] PLAN_KG <= 0 for all rows → return None")
         return None
 
+    # -----------------------------------------------------
+    # 5) groupby
+    # -----------------------------------------------------
     grouped = df.groupby(["BCO", "BUNAME"], as_index=False)["PLAN_KG"].sum()
+
+    print(f"[PLAN_KG] grouped rows = {len(grouped)}")
+    print("[PLAN_KG] grouped sample:")
+    print(grouped.head())
+
     return grouped
 
 
@@ -376,7 +533,6 @@ def calc_plan_kg_by_recipe(df_order, recipe_keyword: str):
 # 벤더별 최종 발주팩 계산 공통 함수
 # -----------------------------------------------------
 def calc_order_qty_packs(base_co: str, vendor: str, sdate_str: str, pacsu: int) -> int:
-
     vendor = (vendor or "").strip()
 
     if pacsu is None or pacsu <= 0:
@@ -396,9 +552,15 @@ def calc_order_qty_packs(base_co: str, vendor: str, sdate_str: str, pacsu: int) 
     if vendor == "코스온":
         return get_coson_order_qty(base_co, sdate_str)
 
+    if vendor == "코스트코":
+        return get_costco_order_qty(base_co, sdate_str)
+
     return 0
 
 
+# -----------------------------------------------------
+# RAW 재계산 (PRODUCTION_PLAN 사용)
+# -----------------------------------------------------
 def recalc_dashboard_raw_keep_manual(qdate):
     if isinstance(qdate, str):
         sdate_str = qdate
@@ -408,11 +570,11 @@ def recalc_dashboard_raw_keep_manual(qdate):
         sdate_dt = datetime(qdate.year(), qdate.month(), qdate.day(), 0, 0, 0)
     now = datetime.now()
 
-    # ORDER_DASHBOARD 조회
+    # ORDER_DASHBOARD 조회 (pre_production_qty → production_plan)
     conn, cur = getdb(DB_NAME)
     try:
         sql = """
-            SELECT co, order_qty_after, pre_production_qty, prev_residue, pkg
+            SELECT co, order_qty_after, production_plan, prev_residue, pkg
             FROM ORDER_DASHBOARD
             WHERE CONVERT(DATE, sdate) = %s
         """
@@ -514,7 +676,9 @@ def recalc_dashboard_raw_keep_manual(qdate):
         closedb(conn)
 
 
-
+# -----------------------------------------------------
+# SAUCE 재계산 (PRODUCTION_PLAN 사용)
+# -----------------------------------------------------
 def recalc_dashboard_sauce_keep_manual(qdate):
     if isinstance(qdate, str):
         sdate_str = qdate
@@ -527,7 +691,7 @@ def recalc_dashboard_sauce_keep_manual(qdate):
     conn, cur = getdb(DB_NAME)
     try:
         sql = """
-            SELECT co, order_qty_after, pre_production_qty,
+            SELECT co, order_qty_after, production_plan,
                    prev_residue, pkg
             FROM ORDER_DASHBOARD
             WHERE CONVERT(DATE, sdate) = %s
@@ -627,7 +791,9 @@ def recalc_dashboard_sauce_keep_manual(qdate):
         closedb(conn)
 
 
-
+# -----------------------------------------------------
+# VEGE 재계산 (PRODUCTION_PLAN 사용)
+# -----------------------------------------------------
 def recalc_dashboard_vege_keep_manual(qdate):
     if isinstance(qdate, str):
         sdate_str = qdate
@@ -642,7 +808,7 @@ def recalc_dashboard_vege_keep_manual(qdate):
     conn, cur = getdb(DB_NAME)
     try:
         sql = """
-            SELECT co, order_qty_after, pre_production_qty,
+            SELECT co, order_qty_after, production_plan,
                    prev_residue, pkg
             FROM ORDER_DASHBOARD
             WHERE CONVERT(DATE, sdate) = %s
@@ -686,11 +852,16 @@ def recalc_dashboard_vege_keep_manual(qdate):
     if df.empty:
         return
 
-    df["PLAN_KG"] = (
-        df["ORDER_QTY_AFTER"].fillna(0).astype(float)
-        + df["PRE_PRODUCTION_QTY"].fillna(0).astype(float)
-        - df["PREV_RESIDUE"].fillna(0).astype(float)
-    ) * df["PKG"].fillna(0).astype(float)
+    # PRE_PRODUCTION_QTY 대신 PRODUCTION_PLAN 사용
+    for col in ("PRODUCTION_PLAN", "PKG"):
+        if col not in df.columns:
+            df[col] = 0
+
+    df["PRODUCTION_PLAN"] = df["PRODUCTION_PLAN"].fillna(0).astype(float)
+    df["PKG"] = df["PKG"].fillna(0).astype(float)
+
+    # PLAN_KG = PRODUCTION_PLAN * PKG
+    df["PLAN_KG"] = df["PRODUCTION_PLAN"] * df["PKG"]
 
     df = df[df["PLAN_KG"] > 0]
     if df.empty:
@@ -781,4 +952,3 @@ def recalc_dashboard_vege_keep_manual(qdate):
                 )
     finally:
         closedb(conn)
-

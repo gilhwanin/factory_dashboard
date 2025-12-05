@@ -533,18 +533,25 @@ class Ui_Form(object):
         self.btn_log.setFont(font)
         self.btn_log.setObjectName("btn_log")
         self.horizontalLayout_3.addWidget(self.btn_log)
-        self.btn_imsi1 = QtWidgets.QPushButton(self.control_frame)
+        self.btn_custom = QtWidgets.QPushButton(self.control_frame)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.btn_imsi1.sizePolicy().hasHeightForWidth())
-        self.btn_imsi1.setSizePolicy(sizePolicy)
+        sizePolicy.setHeightForWidth(self.btn_custom.sizePolicy().hasHeightForWidth())
+        self.btn_custom.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Noto Sans KR Medium")
         font.setPointSize(18)
-        self.btn_imsi1.setFont(font)
-        self.btn_imsi1.setObjectName("btn_imsi1")
-        self.horizontalLayout_3.addWidget(self.btn_imsi1)
+        self.btn_custom.setFont(font)
+        self.btn_custom.setStyleSheet("QPushButton {\n"
+"    background-color: #e8e1f3;\n"
+"    border: 1px solid #b6a8d1;\n"
+"    padding: 6px 12px;\n"
+"    border-radius: 6px;\n"
+"    color: #2b2a35;\n"
+"}")
+        self.btn_custom.setObjectName("btn_custom")
+        self.horizontalLayout_3.addWidget(self.btn_custom)
         self.verticalLayout_2.addWidget(self.control_frame)
 
         self.retranslateUi(Form)
@@ -574,7 +581,7 @@ class Ui_Form(object):
         self.btn_del.setText(_translate("Form", "표 삭제"))
         self.btn_del_row.setText(_translate("Form", "행 삭제"))
         self.btn_update.setText(_translate("Form", "발주량 갱신"))
-        self.btn_update_product.setText(_translate("Form", "생산량 갱신"))
+        self.btn_update_product.setText(_translate("Form", "출고량 갱신"))
         self.btn_excel.setText(_translate("Form", "엑셀"))
         self.btn_log.setText(_translate("Form", "로그"))
-        self.btn_imsi1.setText(_translate("Form", "테스트"))
+        self.btn_custom.setText(_translate("Form", "품명 관리"))

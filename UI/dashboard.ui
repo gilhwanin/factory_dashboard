@@ -834,7 +834,7 @@ QPushButton:pressed {
 }</string>
         </property>
         <property name="text">
-         <string>생산량 갱신</string>
+         <string>출고량 갱신</string>
         </property>
        </widget>
       </item>
@@ -883,7 +883,7 @@ QPushButton:pressed {
        </widget>
       </item>
       <item>
-       <widget class="QPushButton" name="btn_imsi1">
+       <widget class="QPushButton" name="btn_custom">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
           <horstretch>0</horstretch>
@@ -896,8 +896,17 @@ QPushButton:pressed {
           <pointsize>18</pointsize>
          </font>
         </property>
+        <property name="styleSheet">
+         <string notr="true">QPushButton {
+    background-color: #e8e1f3;
+    border: 1px solid #b6a8d1;
+    padding: 6px 12px;
+    border-radius: 6px;
+    color: #2b2a35;
+}</string>
+        </property>
         <property name="text">
-         <string>테스트</string>
+         <string>품명 관리</string>
         </property>
        </widget>
       </item>

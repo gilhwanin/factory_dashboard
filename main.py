@@ -40,6 +40,14 @@ PRODUCT_LIST = [
     ("511476", "코스온"), #코스온_돈육양념칼집구이(600g)(미국산)
     ("511379", "코스온"), #코스온_돈육고추장불고기(2.4kg)
     ("511467", "코스온"), #코스온_부채살양념칼집구이(600g*4)(미국산)
+
+    ("501998", "코스트코"), #냉장양념돼지갈비1.9KG
+    ("520033", "코스트코"), #호)냉장양념LA꽃갈비1.6kg_코스트코
+
+    ("520427", "코스트코"), #호)냉장양념소불고기1.6kg_코스트코
+    ("520261", "코스트코"), #냉장한우양념소불고기(코스트코)(자율중량)
+    ("520513", "코스트코"), #냉장1등급한우양념소불고기(코스트코)(자율중량)
+
     ("511418", "이마트"), #이마트_고추장돼지주물럭(1kg)
     ("502427", "이마트"), #이마트_간장돼지불고기(1kg)
     ("502341", "이마트"), #이마트_양념안창살구이(0.8kg)210412(호주산)
@@ -50,13 +58,15 @@ PRODUCT_LIST = [
     ("520651", "이마트"), #양념토시살구이800G(호주산)(이마트)
     ("520328", "이마트"), #한우양념소불고기700g(이마트)
     ("520712", "이마트"), #의성마늘황제갈비살구이700G(호주산)(이마트)
+
     ("520449", "홈플러스"), #생생양념한우불고기600g(홈플러스)
     ("502832", "홈플러스"), #홈플_호주청정우양념소불고기(800g)
     ("520568", "홈플러스"), #호주산양념소불고기600g(홈플익스)
+
     ("502415", "마켓컬리"), #마켓컬리_양념소불고기(1kg)KF365(미국산)
     ("511540", "마켓컬리"), #마켓컬리 KF365양념소불고기 500g
 ]
-VENDOR_CHOICES = ["코스온", "이마트", "홈플러스", "마켓컬리"]
+VENDOR_CHOICES = ["코스온", "코스트코", "이마트", "홈플러스", "마켓컬리"]
 
 # ---------------------------------------------------------
 # 컬럼 인덱스
@@ -69,14 +79,12 @@ COL_FINAL_ORDER = 4
 COL_DIFF = 5
 COL_PREV_RES = 6
 COL_PRODUCTION = 7
-COL_PRE_PROD = 8
-COL_PLAN = 9
-COL_PLAN_KG = 10
-COL_CUR_PROD = 11
-COL_REMAIN = 12
-COL_TODAY_RES = 13
-COL_TRATE = 14
-COL_WORK_STATUS = 15
+COL_PLAN = 8
+COL_PLAN_KG = 9
+COL_CUR_PROD = 10
+COL_TODAY_RES = 11
+COL_TRATE = 12
+COL_WORK_STATUS = 13
 
 class OrderDashboardWidget(QWidget):
 
@@ -213,22 +221,39 @@ class OrderDashboardWidget(QWidget):
         return True
 
     def on_click_toggle_admin(self):
-        global CURRENT_LEVEL
+        global CURRENT_LEVEL, CURRENT_USER
 
         # 이미 관리자면 OFF
         if CURRENT_LEVEL >= 1:
             CURRENT_LEVEL = 0
+            CURRENT_USER = ""
             self.ui.control_frame.hide()
             self._apply_column_visibility_rules()
             self.ui.btn_admin.setText("관리자")
+
+            # 로그인 해제 시 전체 테이블 새로고침
+            self._load_product_tab()
+            self._load_raw_tab()
+            self._load_sauce_tab()
+            self._load_vege_tab()
             return
 
         # 로그인 시도
         if self._ask_admin_login():
             if CURRENT_LEVEL >= 2:
                 self.ui.control_frame.show()
+            else:
+                self.ui.control_frame.hide()
+
             self._apply_column_visibility_rules()
             self.ui.btn_admin.setText(f"관리자: {CURRENT_USER}")
+
+            # 로그인 성공 시 전체 테이블 새로고침
+            self._load_product_tab()
+            self._load_raw_tab()
+            self._load_sauce_tab()
+            self._load_vege_tab()
+
 
     #3. 탭 / 날짜 이동
     def on_click_prev_date(self):
@@ -307,7 +332,7 @@ class OrderDashboardWidget(QWidget):
 
     def _setup_product_headers(self, table):
         headers = [
-            "업체명",  # 숨김 처리 예정
+            "업체명",
             "품명",
             "팩중량",
             "발주량",
@@ -315,15 +340,14 @@ class OrderDashboardWidget(QWidget):
             "팩 차이",
             "전일 잔피",
             "생산 팩수",
-            "선 생산",
             "생산계획",
             "팩수 to kg",
-            "현재생산량",
-            "남은생산량",
+            "데크출고량",
             "당일 잔피",
-            "수율",  # 🔥 trate 추가
-            "작업상태"  # 🔥 work_status 추가
+            "수율",
+            "작업상태",
         ]
+
         table.setColumnCount(len(headers))
         table.setHorizontalHeaderLabels(headers)
 
@@ -336,9 +360,7 @@ class OrderDashboardWidget(QWidget):
             if not item:
                 continue
 
-            if col == COL_PRE_PROD:
-                item.setBackground(QBrush(header_edit))
-            elif col in (COL_CUR_PROD, COL_REMAIN):
+            elif col in (COL_CUR_PROD,):
                 item.setBackground(QBrush(header_live))
             else:
                 item.setBackground(QBrush(header_normal))
@@ -451,25 +473,27 @@ class OrderDashboardWidget(QWidget):
 
         item.setTextAlignment(alignment)
 
-        if editable:
-            item.setFlags(item.flags() | Qt.ItemIsEditable)
+        # 🔸 LEVEL 2 이상만 실제 편집 가능
+        base_flags = item.flags()
+
+        if editable and CURRENT_LEVEL >= 2:
+            # 편집 가능
+            item.setFlags(base_flags | Qt.ItemIsEditable | Qt.ItemIsEnabled | Qt.ItemIsSelectable)
             item.setForeground(QBrush(QColor("#777777")))
         else:
-            item.setFlags(item.flags() & ~Qt.ItemIsEditable)
+            # 읽기 전용
+            item.setFlags(base_flags & ~Qt.ItemIsEditable)
 
         if foreground is not None:
             item.setForeground(QBrush(foreground))
 
-
         return item
-
-        # -----------------------------------------------------
-        # 제품 탭 셀 생성 (공통 셀 생성 재사용)
-        # -----------------------------------------------------
 
     def _create_product_item(self, text: str, pk: int, col: int):
         # 정렬
-        if col in (COL_VENDOR, COL_PRODUCT):
+        if col == COL_WORK_STATUS:
+            alignment = Qt.AlignCenter
+        elif col in (COL_VENDOR, COL_PRODUCT):
             alignment = Qt.AlignLeft | Qt.AlignVCenter
         else:
             alignment = Qt.AlignRight | Qt.AlignVCenter
@@ -477,18 +501,18 @@ class OrderDashboardWidget(QWidget):
         # 밑줄 (발주량/최종발주량)
         underline = col in (COL_ORDER, COL_FINAL_ORDER)
 
-        # 편집 가능 컬럼
-        editable_cols = {COL_PRE_PROD, COL_TODAY_RES}
+        # 🔸 컬럼 기준 “편집 대상 여부”만 결정
+        editable_cols = {COL_PLAN, COL_TODAY_RES, COL_PREV_RES}
         editable = col in editable_cols
 
-        # 글자 색상 (현재 생산량/남은 생산량 등)
-        foreground = QColor("#0066cc") if col in (COL_CUR_PROD, COL_REMAIN) else None
+        # 글자 색상 (현재 생산량 등)
+        foreground = QColor("#0066cc") if col in (COL_CUR_PROD,) else None
 
         return self._create_cell(
             text=text,
             pk=pk,
             alignment=alignment,
-            editable=editable,
+            editable=editable,  # 실제 편집 가능 여부는 _create_cell에서 LEVEL 체크
             underline=underline,
             foreground=foreground,
         )
@@ -497,14 +521,16 @@ class OrderDashboardWidget(QWidget):
         # 정렬 규칙
         alignment = Qt.AlignLeft | Qt.AlignVCenter if col == 0 else Qt.AlignRight | Qt.AlignVCenter
 
+        # 🔸 편집 대상 컬럼: 재고(1), 선 생산량(4), 입고예정량(6)
         editable = col in (1, 4, 6)
 
-        # 강조 색상 (예상부족량이 음수면 빨간색)
+        # 강조 색상 (예상부족량이 음수면 빨간색) ← 현재 col == 4로 되어있는데
+        # 실제 부족량 컬럼 인덱스에 맞게 조정해도 됨.
         foreground = None
-        if col == 4:  # 예상부족량
+        if col == 5:  # 예상부족량 컬럼이 5번이면 이렇게
             try:
-                if int(text) < 0:
-                    foreground = QColor("#cc0000")  # 빨간
+                if int(str(text).replace(",", "")) < 0:
+                    foreground = QColor("#cc0000")
             except:
                 pass
 
@@ -512,7 +538,7 @@ class OrderDashboardWidget(QWidget):
             text=text,
             pk=pk,
             alignment=alignment,
-            editable=editable,
+            editable=editable,  # 실제 편집 가능 여부는 _create_cell에서 LEVEL 체크
             underline=False,
             foreground=foreground,
         )
@@ -567,7 +593,10 @@ class OrderDashboardWidget(QWidget):
         table = self.ui.tableWidget1
 
         # 관리자 레벨 2 이상만 보여야 하는 컬럼
-        admin_only_cols = [COL_VENDOR, COL_PKG, COL_PREV_RES, COL_PRODUCTION, COL_PRE_PROD, COL_PLAN_KG, COL_REMAIN, COL_TODAY_RES]
+        admin_only_cols = [
+            COL_VENDOR, COL_PKG, COL_PREV_RES, COL_PRODUCTION,
+            COL_PLAN_KG, COL_TODAY_RES
+        ]
 
 
         for col in admin_only_cols:
@@ -586,9 +615,9 @@ class OrderDashboardWidget(QWidget):
                 SELECT
                     PK, co, rname, uname, pkg,
                     order_qty, order_qty_after,
-                    prev_residue, pre_production_qty,
-                    produced_qty, remain_production_qty,
-                    today_residue, work_status, trate
+                    prev_residue, production_plan,
+                    produced_qty, today_residue,
+                    work_status
                 FROM ORDER_DASHBOARD
                 WHERE CONVERT(DATE, sdate) = %s
                 ORDER BY PK
@@ -611,7 +640,6 @@ class OrderDashboardWidget(QWidget):
         df.columns = [str(c).upper() for c in df.columns]
 
         table.setRowCount(len(df))
-        previous_rname = None
 
         for row_idx, row in enumerate(df.itertuples(index=False)):
             pk = int(row.PK)
@@ -623,20 +651,32 @@ class OrderDashboardWidget(QWidget):
             order_qty = int(row.ORDER_QTY)
             order_qty_after = int(row.ORDER_QTY_AFTER)
             prev_residue = int(row.PREV_RESIDUE)
-            pre_production_qty = int(row.PRE_PRODUCTION_QTY)
             produced_qty = int(row.PRODUCED_QTY)
             today_residue = int(row.TODAY_RESIDUE)
+            production_plan = int(row.PRODUCTION_PLAN)
 
             # 계산 필드
             diff = order_qty_after - order_qty
             diff_display = "" if diff == 0 else str(diff)
             production_qty = max(order_qty_after - prev_residue, 0)
-            plan_qty = production_qty + pre_production_qty
+            plan_qty = production_plan
             plan_kg = plan_qty * pkg
-            remain_qty = plan_qty - produced_qty
-            work_status = row.WORK_STATUS if row.WORK_STATUS else ""
-            trate_val = row.TRATE if row.TRATE is not None else 0
-            trate_text = fmt(f"{float(trate_val):.2f}")
+            # 🔵 수율(trate) 계산
+            if production_plan > 0:
+                trate_value = (order_qty_after - prev_residue + today_residue) * 100 / production_plan
+                trate_text = f"{trate_value:.2f}"
+            else:
+                trate_text = "-"
+
+            # 🔵 작업상태 자동 계산
+            if plan_qty <= 0 :
+                work_status = "-"
+            elif produced_qty > order_qty_after:
+                work_status = "초과"
+            elif produced_qty == order_qty_after:
+                work_status = "완료"
+            else:
+                work_status = ""
 
             values = [
                 rname,
@@ -647,11 +687,9 @@ class OrderDashboardWidget(QWidget):
                 fmt(diff_display),
                 fmt(prev_residue),
                 fmt(production_qty),
-                fmt(pre_production_qty),
                 fmt(plan_qty),
                 fmt(f"{plan_kg:.1f}"),
                 fmt(produced_qty),
-                fmt(remain_qty),
                 fmt(today_residue),
                 trate_text,  # 14번: COL_TRATE
                 work_status  # 15번: COL_WORK_STATUS
@@ -911,9 +949,8 @@ class OrderDashboardWidget(QWidget):
                 SELECT
                     PK, rname, uname, pkg,
                     order_qty, order_qty_after,
-                    prev_residue, pre_production_qty,
-                    produced_qty, remain_production_qty,
-                    today_residue, work_status, trate
+                    prev_residue, production_plan, produced_qty,
+                    today_residue
                 FROM ORDER_DASHBOARD
                 WHERE PK = %s
             """
@@ -928,32 +965,71 @@ class OrderDashboardWidget(QWidget):
         r.columns = [str(c).upper() for c in r.columns]
         r = r.iloc[0]
 
-        production_qty = max(r["ORDER_QTY_AFTER"] - r["PREV_RESIDUE"], 0)
-        plan_qty = production_qty + r["PRE_PRODUCTION_QTY"]
-        plan_kg = plan_qty * r["PKG"]
-        remain_qty = plan_qty - r["PRODUCED_QTY"]
-        diff = r["ORDER_QTY_AFTER"] - r["ORDER_QTY"]
-        trate_val = r["TRATE"] if r["TRATE"] is not None else 0
+        # -------------------------
+        # 계산값 정의
+        # -------------------------
+        order_qty = r["ORDER_QTY"]
+        order_qty_after = r["ORDER_QTY_AFTER"]
+        prev_residue = r["PREV_RESIDUE"]
+        today_residue = r["TODAY_RESIDUE"]
+        production_plan = r["PRODUCTION_PLAN"]
+        produced_qty = r["PRODUCED_QTY"]
+        pkg = r["PKG"]
 
+        # 생산량 = (최종발주량 - 전일잔피)
+        production_qty = max(order_qty_after - prev_residue, 0)
+
+        # PLAN_KG
+        plan_kg = production_plan * pkg
+
+        # 차이(DIFF)
+        diff = order_qty_after - order_qty
+
+        # -------------------------
+        # 🔥 trate 계산 (수율)
+        # (최종발주량 - 전일잔피 + 당일잔피) * 100 / 생산계획
+        # -------------------------
+        if production_plan > 0:
+            trate_value = (order_qty_after - prev_residue + today_residue) * 100 / production_plan
+            trate_text = f"{trate_value:.2f}"
+        else:
+            trate_text = "-"
+
+        # -------------------------
+        # 🔥 work_status 자동 계산
+        # -------------------------
+        if production_plan <= 0 :
+            work_status = "-"
+        elif produced_qty > order_qty_after:
+            work_status = "초과"
+        elif produced_qty == order_qty_after:
+            work_status = "완료"
+        else:
+            work_status = ""
+
+        # -------------------------
+        # 테이블 적용값 구성
+        # -------------------------
         values = {
             COL_VENDOR: r["RNAME"],
             COL_PRODUCT: r["UNAME"],
-            COL_PKG: fmt(f"{r['PKG']:.1f}"),
-            COL_ORDER: fmt(r["ORDER_QTY"]),
-            COL_FINAL_ORDER: fmt(r["ORDER_QTY_AFTER"]),
+            COL_PKG: fmt(f"{pkg:.1f}"),
+            COL_ORDER: fmt(order_qty),
+            COL_FINAL_ORDER: fmt(order_qty_after),
             COL_DIFF: "" if diff == 0 else fmt(diff),
-            COL_PREV_RES: fmt(r["PREV_RESIDUE"]),
+            COL_PREV_RES: fmt(prev_residue),
             COL_PRODUCTION: fmt(production_qty),
-            COL_PRE_PROD: fmt(r["PRE_PRODUCTION_QTY"]),
-            COL_PLAN: fmt(plan_qty),
+            COL_PLAN: fmt(production_plan),
             COL_PLAN_KG: fmt(f"{plan_kg:.1f}"),
-            COL_CUR_PROD: fmt(r["PRODUCED_QTY"]),
-            COL_REMAIN: fmt(remain_qty),
-            COL_TODAY_RES: fmt(r["TODAY_RESIDUE"]),
-            COL_WORK_STATUS: r["WORK_STATUS"] or "",
-            COL_TRATE: fmt(f"{float(trate_val):.2f}"),
+            COL_CUR_PROD: fmt(produced_qty),
+            COL_TODAY_RES: fmt(today_residue),
+            COL_TRATE: trate_text,
+            COL_WORK_STATUS: work_status,
         }
 
+        # -------------------------
+        # 테이블 특정 row 찾기
+        # -------------------------
         row_idx = -1
         for i in range(table.rowCount()):
             if table.item(i, 0) and table.item(i, 0).data(Qt.UserRole) == pk:
@@ -963,6 +1039,9 @@ class OrderDashboardWidget(QWidget):
         if row_idx == -1:
             return
 
+        # -------------------------
+        # 값 반영
+        # -------------------------
         table.blockSignals(True)
         for col, text in values.items():
             item = self._create_product_item(text, pk, col)
@@ -1150,15 +1229,14 @@ class OrderDashboardWidget(QWidget):
     def _on_product_item_changed(self, item: QTableWidgetItem):
         col = item.column()
 
-        # 선 생산(COL_PRE_PROD) 또는 당일 잔피(COL_TODAY_RES)만 처리
-        if col not in (COL_PRE_PROD, COL_TODAY_RES):
+        # 생산계획(COL_PLAN) 또는 당일잔피(COL_TODAY_RES)만 처리
+        if col not in (COL_PLAN, COL_TODAY_RES, COL_PREV_RES):
             return
 
         pk = item.data(Qt.UserRole)
         if pk is None:
             return
 
-        # 콤마 제거 후 정수 파싱
         raw_text = item.text()
         text = raw_text.replace(",", "").strip()
 
@@ -1173,24 +1251,22 @@ class OrderDashboardWidget(QWidget):
             self.ui.tableWidget1.blockSignals(False)
             new_val = 0
 
-        # 컬럼에 따라 업데이트 필드 결정
-        if col == COL_PRE_PROD:
-            field_name = "pre_production_qty"
-        else:  # COL_TODAY_RES
+        if col == COL_PLAN:
+            field_name = "production_plan"
+        elif col == COL_TODAY_RES:
             field_name = "today_residue"
+        elif col == COL_PREV_RES:
+            field_name = "prev_residue"
+        else:
+            return
 
         conn, cur = getdb(DB_NAME)
         try:
-            sql = f"""
-                UPDATE ORDER_DASHBOARD
-                SET {field_name} = %s
-                WHERE PK = %s
-            """
+            sql = f"UPDATE ORDER_DASHBOARD SET {field_name} = %s WHERE PK = %s"
             runquery(cur, sql, [new_val, pk])
         finally:
             closedb(conn)
 
-        # 해당 행만 다시 계산해서 반영
         self._refresh_single_row(pk)
 
     def _on_raw_item_changed(self, item: QTableWidgetItem):
@@ -1316,21 +1392,10 @@ class OrderDashboardWidget(QWidget):
 
     #8. 대시보드 데이터 가공
     def _dashboard_raw_from_dashboard(self):
-        """
-        DASHBOARD_RAW 생성(덮어쓰기) 로직 — Dummy row 입력 후 사용하는 버전
-        기준:
-            PLAN_PACKS = order_qty_after + pre_production_qty - prev_residue
-            PLAN_KG    = PLAN_PACKS × pkg
-        레시피 기준: '(정선)'
-        """
-        print("========[RAW FROM DASHBOARD START]========")
-
         qdate = self.ui.dateEdit.date()
         sdate_str = qdate.toString("yyyy-MM-dd")
         sdate_dt = datetime(qdate.year(), qdate.month(), qdate.day(), 0, 0, 0)
         now = datetime.now()
-
-        print(f"[INFO] 기준일: {sdate_str}")
 
         # STEP 1) ORDER_DASHBOARD 조회
         conn, cur = getdb(DB_NAME)
@@ -1339,7 +1404,7 @@ class OrderDashboardWidget(QWidget):
                 SELECT
                     co,
                     order_qty_after,
-                    pre_production_qty,
+                    production_plan,
                     prev_residue,
                     pkg
                 FROM ORDER_DASHBOARD
@@ -1349,12 +1414,7 @@ class OrderDashboardWidget(QWidget):
         finally:
             closedb(conn)
 
-        print("\n[DEBUG] df_order 조회 결과:")
-        print(df_order)
-
         if df_order is None or df_order.empty:
-            print("[STOP] ORDER_DASHBOARD 없음 → DASHBOARD_RAW DELETE 후 종료")
-
             conn_d, cur_d = getdb(DB_NAME)
             try:
                 runquery(cur_d,
@@ -1362,22 +1422,15 @@ class OrderDashboardWidget(QWidget):
                          [sdate_str])
             finally:
                 closedb(conn_d)
-
-            print("========[RAW FROM DASHBOARD END]========")
             return
 
         df_order.columns = [c.upper() for c in df_order.columns]
         df_order["CO"] = df_order["CO"].astype(str).str.strip()
 
-        # STEP 2) 레시피 기반 PLAN_KG 집계 (정선)
-        grouped = calc_plan_kg_by_recipe(df_order, "(정선)")
-
-        print("\n[DEBUG] grouped 결과:")
-        print(grouped)
+        # STEP 2) 레시피 기반 PLAN_KG 집계
+        grouped = calc_plan_kg_by_recipe(df_order, "(정선)", ['502811'])
 
         if grouped is None or grouped.empty:
-            print("[STOP] grouped 0행 → DASHBOARD_RAW DELETE 후 종료")
-
             conn_d, cur_d = getdb(DB_NAME)
             try:
                 runquery(cur_d,
@@ -1385,12 +1438,9 @@ class OrderDashboardWidget(QWidget):
                          [sdate_str])
             finally:
                 closedb(conn_d)
-
-            print("========[RAW FROM DASHBOARD END]========")
             return
 
-        # STEP 3) 현재 RAW 완전 삭제 (새로 생성하는 버전)
-        print("\n[DELETE] 기존 DASHBOARD_RAW 삭제")
+        # STEP 3) 기존 RAW 삭제
         conn_d, cur_d = getdb(DB_NAME)
         try:
             runquery(cur_d,
@@ -1408,8 +1458,6 @@ class OrderDashboardWidget(QWidget):
             plan_kg_sum = float(r["PLAN_KG"] or 0)
             qty_int = int(round(plan_kg_sum))
 
-            print(f"[ROW] BCO={bco}, BUNAME={buname}, PLAN_KG={plan_kg_sum}, qty_int={qty_int}")
-
             if qty_int <= 0:
                 continue
 
@@ -1427,35 +1475,16 @@ class OrderDashboardWidget(QWidget):
                 "ipgo_qty": 0,
             })
 
-        print(f"\n[DEBUG] INSERT 준비 row 수: {len(rows)}")
-
         if not rows:
-            print("[STOP] INSERT할 row 없음 → 종료")
-            print("========[RAW FROM DASHBOARD END]========")
             return
 
-        # STEP 5) INSERT 실행
         self._insert_dashboard_raw_rows(rows)
 
-        print("[DONE] RAW INSERT 완료")
-        print("========[RAW FROM DASHBOARD END]========")
-
     def _dashboard_sauce_from_dashboard(self):
-        """
-        DASHBOARD_SAUCE 생성(덮어쓰기) 로직
-        기준:
-            PLAN_PACKS = order_qty_after + pre_production_qty - prev_residue
-            PLAN_KG    = PLAN_PACKS × pkg
-        레시피 키워드: '소스'
-        """
-        print("========[SAUCE FROM DASHBOARD START]========")
-
         qdate = self.ui.dateEdit.date()
         sdate_str = qdate.toString("yyyy-MM-dd")
         sdate_dt = datetime(qdate.year(), qdate.month(), qdate.day(), 0, 0, 0)
         now = datetime.now()
-
-        print(f"[INFO] 기준일: {sdate_str}")
 
         # STEP 1) ORDER_DASHBOARD 조회
         conn, cur = getdb(DB_NAME)
@@ -1464,7 +1493,7 @@ class OrderDashboardWidget(QWidget):
                 SELECT
                     co,
                     order_qty_after,
-                    pre_production_qty,
+                    production_plan,
                     prev_residue,
                     pkg
                 FROM ORDER_DASHBOARD
@@ -1474,12 +1503,7 @@ class OrderDashboardWidget(QWidget):
         finally:
             closedb(conn)
 
-        print("\n[DEBUG] df_order 조회 결과:")
-        print(df_order)
-
         if df_order is None or df_order.empty:
-            print("[STOP] ORDER_DASHBOARD 없음 → SAUCE 삭제 후 종료")
-
             conn_d, cur_d = getdb(DB_NAME)
             try:
                 runquery(cur_d,
@@ -1487,22 +1511,15 @@ class OrderDashboardWidget(QWidget):
                          [sdate_str])
             finally:
                 closedb(conn_d)
-
-            print("========[SAUCE FROM DASHBOARD END]========")
             return
 
         df_order.columns = [c.upper() for c in df_order.columns]
         df_order["CO"] = df_order["CO"].astype(str).str.strip()
 
-        # STEP 2) 레시피 기반 PLAN_KG (소스)
-        grouped = calc_plan_kg_by_recipe(df_order, "소스")
-
-        print("\n[DEBUG] grouped 결과:")
-        print(grouped)
+        # STEP 2) 소스 PLAN_KG
+        grouped = calc_plan_kg_by_recipe(df_order, "소스", ['600901'])
 
         if grouped is None or grouped.empty:
-            print("[STOP] grouped 없음 → SAUCE 삭제 후 종료")
-
             conn_d, cur_d = getdb(DB_NAME)
             try:
                 runquery(cur_d,
@@ -1510,13 +1527,9 @@ class OrderDashboardWidget(QWidget):
                          [sdate_str])
             finally:
                 closedb(conn_d)
-
-            print("========[SAUCE FROM DASHBOARD END]========")
             return
 
-        # STEP 3) 기존 SAUCE 삭제 (덮어쓰기)
-        print("[DELETE] 기존 DASHBOARD_SAUCE 삭제")
-
+        # STEP 3) 기존 데이터 삭제
         conn_d, cur_d = getdb(DB_NAME)
         try:
             runquery(cur_d,
@@ -1525,7 +1538,7 @@ class OrderDashboardWidget(QWidget):
         finally:
             closedb(conn_d)
 
-        # STEP 4) INSERT rows 생성
+        # STEP 4) INSERT
         rows = []
         for _, r in grouped.iterrows():
             bco = str(r["BCO"]).strip()
@@ -1533,8 +1546,6 @@ class OrderDashboardWidget(QWidget):
 
             plan_kg_sum = float(r["PLAN_KG"] or 0)
             qty_int = int(round(plan_kg_sum))
-
-            print(f"[ROW] BCO={bco}, BUNAME={buname}, PLAN_KG={plan_kg_sum}, qty_int={qty_int}")
 
             if qty_int <= 0:
                 continue
@@ -1553,38 +1564,16 @@ class OrderDashboardWidget(QWidget):
                 "ipgo_qty": 0,
             })
 
-        print(f"\n[DEBUG] INSERT row 수: {len(rows)}")
-
-        if not rows:
-            print("[STOP] INSERT할 row 없음")
-            print("========[SAUCE FROM DASHBOARD END]========")
-            return
-
-        self._insert_dashboard_sauce_rows(rows)
-
-        print("[DONE] SAUCE INSERT 완료")
-        print("========[SAUCE FROM DASHBOARD END]========")
+        if rows:
+            self._insert_dashboard_sauce_rows(rows)
 
     def _dashboard_vege_from_dashboard(self):
-        """
-        DASHBOARD_VEGE 생성(덮어쓰기) 로직
-        기준:
-            PLAN_PACKS = order_qty_after + pre_production_qty - prev_residue
-            PLAN_KG    = PLAN_PACKS × pkg
-            VEGE_KG    = PLAN_KG × SA
-        VEGE_BCO_LIST: 고정 야채 품목
-        """
-        print("========[VEGE FROM DASHBOARD START]========")
-
         qdate = self.ui.dateEdit.date()
         sdate_str = qdate.toString("yyyy-MM-dd")
         sdate_dt = datetime(qdate.year(), qdate.month(), qdate.day(), 0, 0, 0)
         now = datetime.now()
 
-        VEGE_BCO_LIST = ["720192", "700122", "720094"]
-
-        print(f"[INFO] 기준일: {sdate_str}")
-        print(f"[INFO] VEGE_BCO_LIST: {VEGE_BCO_LIST}")
+        VEGE_BCO_LIST = ["720192", "700122", "720094", "710665"]
 
         # STEP 1) ORDER_DASHBOARD 조회
         conn, cur = getdb(DB_NAME)
@@ -1592,7 +1581,7 @@ class OrderDashboardWidget(QWidget):
             sql = """
                 SELECT
                     co, order_qty_after,
-                    pre_production_qty,
+                    production_plan,
                     prev_residue, pkg
                 FROM ORDER_DASHBOARD
                 WHERE CONVERT(DATE, sdate) = %s
@@ -1601,12 +1590,7 @@ class OrderDashboardWidget(QWidget):
         finally:
             closedb(conn)
 
-        print("\n[DEBUG] df_order:")
-        print(df_order)
-
         if df_order is None or df_order.empty:
-            print("[STOP] ORDER_DASHBOARD 없음 → VEGE 삭제")
-
             conn_d, cur_d = getdb(DB_NAME)
             try:
                 runquery(cur_d,
@@ -1614,20 +1598,16 @@ class OrderDashboardWidget(QWidget):
                          [sdate_str])
             finally:
                 closedb(conn_d)
-            print("========[VEGE FROM DASHBOARD END]========")
             return
 
         df_order.columns = [c.upper() for c in df_order.columns]
         df_order["CO"] = df_order["CO"].astype(str).str.strip()
 
         co_list = df_order["CO"].unique().tolist()
-        print(f"\n[DEBUG] CO LIST = {co_list}")
-
         if not co_list:
-            print("[STOP] CO 없음 → 종료")
             return
 
-        # STEP 2) 야채 RECIPE 조회
+        # STEP 2) RECIPE 조회
         conn, cur = getdb("GFOOD_B")
         try:
             sql = f"""
@@ -1641,12 +1621,7 @@ class OrderDashboardWidget(QWidget):
         finally:
             closedb(conn)
 
-        print("\n[DEBUG] df_recipe(야채):")
-        print(df_recipe)
-
         if df_recipe is None or df_recipe.empty:
-            print("[STOP] 야채 레시피 없음 → VEGE 삭제")
-
             conn_d, cur_d = getdb(DB_NAME)
             try:
                 runquery(cur_d,
@@ -1654,7 +1629,6 @@ class OrderDashboardWidget(QWidget):
                          [sdate_str])
             finally:
                 closedb(conn_d)
-            print("========[VEGE FROM DASHBOARD END]========")
             return
 
         df_recipe.columns = [c.upper() for c in df_recipe.columns]
@@ -1663,46 +1637,25 @@ class OrderDashboardWidget(QWidget):
 
         # STEP 3) JOIN
         df = df_order.merge(df_recipe, on="CO", how="inner")
-        print("\n[DEBUG] JOIN 결과:")
-        print(df)
-
         if df.empty:
-            print("[STOP] 조인 결과 없음 → VEGE 삭제")
             return
 
         # STEP 4) PLAN_KG
-        df["PLAN_KG"] = (
-                                df["ORDER_QTY_AFTER"].fillna(0).astype(float)
-                                + df["PRE_PRODUCTION_QTY"].fillna(0).astype(float)
-                                - df["PREV_RESIDUE"].fillna(0).astype(float)
-                        ) * df["PKG"].fillna(0).astype(float)
-
-        print("\n[DEBUG] PLAN_KG:")
-        print(df[["BCO", "BUNAME", "PLAN_KG"]])
-
+        df["PLAN_KG"] = df["PRODUCTION_PLAN"].fillna(0).astype(float) * df["PKG"].fillna(0).astype(float)
         df = df[df["PLAN_KG"] > 0]
         if df.empty:
-            print("[STOP] PLAN_KG 없음")
             return
 
         # STEP 5) VEGE_KG
         df["VEGE_KG"] = df["PLAN_KG"] * df["SA"].fillna(0).astype(float)
-
-        print("\n[DEBUG] VEGE_KG:")
-        print(df[["BCO", "BUNAME", "PLAN_KG", "SA", "VEGE_KG"]])
-
         df = df[df["VEGE_KG"] > 0]
         if df.empty:
-            print("[STOP] VEGE_KG 없음")
             return
 
         # STEP 6) 그룹핑
         grouped = df.groupby(["BCO", "BUNAME"], as_index=False)["VEGE_KG"].sum()
 
-        print("\n[DEBUG] grouped:")
-        print(grouped)
-
-        # STEP 7) 기존 제거
+        # 기존 VEGE 삭제
         conn_d, cur_d = getdb(DB_NAME)
         try:
             runquery(cur_d,
@@ -1711,23 +1664,18 @@ class OrderDashboardWidget(QWidget):
         finally:
             closedb(conn_d)
 
-        # STEP 8) INSERT 준비
+        # INSERT 준비
         rows = []
         for _, r in grouped.iterrows():
-            bco = r["BCO"]
-            buname = r["BUNAME"]
             qty_int = int(round(float(r["VEGE_KG"] or 0)))
-
-            print(f"[ROW] BCO={bco}, BUNAME={buname}, VEGE_KG={r['VEGE_KG']}, qty_int={qty_int}")
-
             if qty_int <= 0:
                 continue
 
-            stock_val = get_stock_from_pan(bco, sdate_str)
+            stock_val = get_stock_from_pan(str(r["BCO"]), sdate_str)
 
             rows.append({
-                "uname": buname,
-                "co": bco,
+                "uname": r["BUNAME"],
+                "co": r["BCO"],
                 "sdate": sdate_dt,
                 "created_time": now,
                 "stock": stock_val,
@@ -1737,15 +1685,8 @@ class OrderDashboardWidget(QWidget):
                 "ipgo_qty": 0,
             })
 
-        print(f"\n[DEBUG] INSERT row 수 = {len(rows)}")
-
         if rows:
             self._insert_dashboard_vege_rows(rows)
-            print("[DONE] VEGE INSERT 완료")
-        else:
-            print("[STOP] rows 없음")
-
-        print("========[VEGE FROM DASHBOARD END]========")
 
     #9. DB Insert/Update/Delete
     def on_click_add_dummy_rows(self):
@@ -1839,9 +1780,8 @@ class OrderDashboardWidget(QWidget):
                     "order_qty": order_qty_packs,
                     "order_qty_after": order_qty_packs,
                     "prev_residue": prev_residue,
-                    "pre_production_qty": 0,
+                    "production_plan": 0,
                     "produced_qty": produced_qty,
-                    "remain_production_qty": 0,
                     "today_residue": 0,
                 })
 
@@ -1876,18 +1816,17 @@ class OrderDashboardWidget(QWidget):
                 INSERT INTO ORDER_DASHBOARD (
                     bigo, sdate, created_time, id,
                     rname, uname, co, pkg,
-                    order_qty, order_qty_after, prev_residue, pre_production_qty,
-                    produced_qty, remain_production_qty, today_residue
+                    order_qty, order_qty_after, prev_residue, production_plan,
+                    produced_qty, today_residue
                 )
-                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
             """
             for r in rows:
                 params = [
                     r["bigo"], r["sdate"], r["created_time"], r["id"],
                     r["rname"], r["uname"], r["co"], r["pkg"],
                     r["order_qty"], r["order_qty_after"], r["prev_residue"],
-                    r["pre_production_qty"], r["produced_qty"],
-                    r["remain_production_qty"], r["today_residue"],
+                    r["production_plan"], r["produced_qty"], r["today_residue"],
                 ]
                 runquery(cur, sql, params)
         finally:
@@ -1961,7 +1900,6 @@ class OrderDashboardWidget(QWidget):
                 ])
         finally:
             closedb(conn)
-
 
     def on_click_show_log_dialog(self):
         dlg = DashboardLogDialog(self)
@@ -2497,7 +2435,7 @@ class OrderDashboardWidget(QWidget):
             traceback.print_exc()
             QMessageBox.critical(self, "오류", f"엑셀 저장 중 오류가 발생했습니다.\n{e}")
 
-        
+
 # ---------------------------------------------------------
 # 실행
 # ---------------------------------------------------------
