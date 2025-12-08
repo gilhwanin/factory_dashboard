@@ -23,7 +23,7 @@ imports:
  &#8226;   <a href="#PyQt5.QtWidgets">PyQt5.QtWidgets</a>
  &#8226;   <a href="#UI.dashboard">UI.dashboard</a>
  &#8226;   <a href="#UTIL.db_handler">UTIL.db_handler</a>
- &#8226;   <a href="#UTIL.utils_qt">UTIL.utils_qt</a>
+ &#8226;   <a href="#UTIL.util">UTIL.util</a>
  &#8226;   <a href="#_collections_abc">_collections_abc</a>
  &#8226;   <a href="#_weakrefset">_weakrefset</a>
  &#8226;   <a href="#abc">abc</a>
@@ -33,6 +33,9 @@ imports:
  &#8226;   <a href="#collections.abc">collections.abc</a>
  &#8226;   <a href="#copyreg">copyreg</a>
  &#8226;   <a href="#datetime">datetime</a>
+ &#8226;   <a href="#dialog.DashboardLogDialog">dialog.DashboardLogDialog</a>
+ &#8226;   <a href="#dialog.ProductListDialog">dialog.ProductListDialog</a>
+ &#8226;   <a href="#dialog.ProductNameDialog">dialog.ProductNameDialog</a>
  &#8226;   <a href="#encodings">encodings</a>
  &#8226;   <a href="#encodings.aliases">encodings.aliases</a>
  &#8226;   <a href="#encodings.ascii">encodings.ascii</a>
@@ -163,11 +166,11 @@ imports:
  &#8226;   <a href="#keyword">keyword</a>
  &#8226;   <a href="#linecache">linecache</a>
  &#8226;   <a href="#locale">locale</a>
+ &#8226;   <a href="#logic.cal_values">logic.cal_values</a>
  &#8226;   <a href="#ntpath">ntpath</a>
  &#8226;   <a href="#openpyxl.styles">openpyxl.styles</a>
  &#8226;   <a href="#openpyxl.utils">openpyxl.utils</a>
  &#8226;   <a href="#operator">operator</a>
- &#8226;   <a href="#oracle">oracle</a>
  &#8226;   <a href="#os">os</a>
  &#8226;   <a href="#pandas">pandas</a>
  &#8226;   <a href="#posixpath">posixpath</a>
@@ -3173,6 +3176,8 @@ imported by:
  &#8226;   <a href="#PyQt5.QtWidgets">PyQt5.QtWidgets</a>
  &#8226;   <a href="#UI.dashboard">UI.dashboard</a>
  &#8226;   <a href="#ci_cd.updatedown">ci_cd.updatedown</a>
+ &#8226;   <a href="#dialog.DashboardLogDialog">dialog.DashboardLogDialog</a>
+ &#8226;   <a href="#dialog.ProductNameDialog">dialog.ProductNameDialog</a>
  &#8226;   <a href="#main.py">main.py</a>
  &#8226;   <a href="#qtpy">qtpy</a>
  &#8226;   <a href="#qtpy.QtCore">qtpy.QtCore</a>
@@ -3214,6 +3219,10 @@ imported by:
     <a href="#UI.dashboard">UI.dashboard</a>
  &#8226;   <a href="#UTIL.utils_qt">UTIL.utils_qt</a>
  &#8226;   <a href="#ci_cd.updatedown">ci_cd.updatedown</a>
+ &#8226;   <a href="#dialog.DashboardLogDialog">dialog.DashboardLogDialog</a>
+ &#8226;   <a href="#dialog.MasterSearchDialog">dialog.MasterSearchDialog</a>
+ &#8226;   <a href="#dialog.ProductListDialog">dialog.ProductListDialog</a>
+ &#8226;   <a href="#dialog.ProductNameDialog">dialog.ProductNameDialog</a>
  &#8226;   <a href="#main.py">main.py</a>
  &#8226;   <a href="#qtpy.QtGui">qtpy.QtGui</a>
  &#8226;   <a href="#qtpy.QtWidgets">qtpy.QtWidgets</a>
@@ -3287,6 +3296,7 @@ imported by:
 imported by:
     <a href="#UTIL.db_handler">UTIL.db_handler</a>
  &#8226;   <a href="#UTIL.dfencoding">UTIL.dfencoding</a>
+ &#8226;   <a href="#UTIL.util">UTIL.util</a>
  &#8226;   <a href="#UTIL.utils_qt">UTIL.utils_qt</a>
 
   </div>
@@ -3311,6 +3321,11 @@ imports:
   <div class="import">
 imported by:
     <a href="#ci_cd.updatedown">ci_cd.updatedown</a>
+ &#8226;   <a href="#dialog.DashboardLogDialog">dialog.DashboardLogDialog</a>
+ &#8226;   <a href="#dialog.MasterSearchDialog">dialog.MasterSearchDialog</a>
+ &#8226;   <a href="#dialog.ProductListDialog">dialog.ProductListDialog</a>
+ &#8226;   <a href="#dialog.ProductNameDialog">dialog.ProductNameDialog</a>
+ &#8226;   <a href="#logic.cal_values">logic.cal_values</a>
  &#8226;   <a href="#main.py">main.py</a>
 
   </div>
@@ -3336,6 +3351,22 @@ imported by:
 </div>
 
 <div class="node">
+  <a name="UTIL.util"></a>
+  <a target="code" href="///C:/Users/250327/PycharmProjects/factory_dashboard/UTIL/util.py" type="text/plain"><tt>UTIL.util</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#UTIL">UTIL</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#main.py">main.py</a>
+
+  </div>
+
+</div>
+
+<div class="node">
   <a name="UTIL.utils_qt"></a>
   <a target="code" href="///C:/Users/250327/PycharmProjects/factory_dashboard/UTIL/utils_qt.py" type="text/plain"><tt>UTIL.utils_qt</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
@@ -3346,7 +3377,9 @@ imports:
   </div>
   <div class="import">
 imported by:
-    <a href="#main.py">main.py</a>
+    <a href="#dialog.DashboardLogDialog">dialog.DashboardLogDialog</a>
+ &#8226;   <a href="#dialog.MasterSearchDialog">dialog.MasterSearchDialog</a>
+ &#8226;   <a href="#dialog.ProductListDialog">dialog.ProductListDialog</a>
 
   </div>
 
@@ -5132,7 +5165,6 @@ imported by:
  &#8226;   <a href="#multiprocessing.managers">multiprocessing.managers</a>
  &#8226;   <a href="#multiprocessing.reduction">multiprocessing.reduction</a>
  &#8226;   <a href="#openpyxl.styles.cell_style">openpyxl.styles.cell_style</a>
- &#8226;   <a href="#oracledb.sparse_vector">oracledb.sparse_vector</a>
  &#8226;   <a href="#socket">socket</a>
 
   </div>
@@ -6183,7 +6215,6 @@ imported by:
  &#8226;   <a href="#email.encoders">email.encoders</a>
  &#8226;   <a href="#encodings.base64_codec">encodings.base64_codec</a>
  &#8226;   <a href="#http.server">http.server</a>
- &#8226;   <a href="#oracledb.builtin_hooks">oracledb.builtin_hooks</a>
  &#8226;   <a href="#pycparser.ply.yacc">pycparser.ply.yacc</a>
  &#8226;   <a href="#secrets">secrets</a>
  &#8226;   <a href="#ssl">ssl</a>
@@ -7814,8 +7845,6 @@ imported by:
  &#8226;   <a href="#openpyxl.workbook.defined_name">openpyxl.workbook.defined_name</a>
  &#8226;   <a href="#openpyxl.worksheet._writer">openpyxl.worksheet._writer</a>
  &#8226;   <a href="#openpyxl.worksheet.datavalidation">openpyxl.worksheet.datavalidation</a>
- &#8226;   <a href="#oracledb">oracledb</a>
- &#8226;   <a href="#oracledb.connection">oracledb.connection</a>
  &#8226;   <a href="#packaging._manylinux">packaging._manylinux</a>
  &#8226;   <a href="#pandas.core.apply">pandas.core.apply</a>
  &#8226;   <a href="#pandas.core.arrays.sparse.array">pandas.core.arrays.sparse.array</a>
@@ -8870,9 +8899,11 @@ imported by:
  &#8226;   <a href="#dateutil.tz._factories">dateutil.tz._factories</a>
  &#8226;   <a href="#dateutil.tz.tz">dateutil.tz.tz</a>
  &#8226;   <a href="#dateutil.tz.win">dateutil.tz.win</a>
+ &#8226;   <a href="#dialog.DashboardLogDialog">dialog.DashboardLogDialog</a>
  &#8226;   <a href="#email.utils">email.utils</a>
  &#8226;   <a href="#http.cookiejar">http.cookiejar</a>
  &#8226;   <a href="#http.server">http.server</a>
+ &#8226;   <a href="#logic.cal_values">logic.cal_values</a>
  &#8226;   <a href="#main.py">main.py</a>
  &#8226;   <a href="#openpyxl.cell._writer">openpyxl.cell._writer</a>
  &#8226;   <a href="#openpyxl.cell.cell">openpyxl.cell.cell</a>
@@ -8881,8 +8912,6 @@ imported by:
  &#8226;   <a href="#openpyxl.packaging.core">openpyxl.packaging.core</a>
  &#8226;   <a href="#openpyxl.utils.datetime">openpyxl.utils.datetime</a>
  &#8226;   <a href="#openpyxl.writer.excel">openpyxl.writer.excel</a>
- &#8226;   <a href="#oracledb.aq">oracledb.aq</a>
- &#8226;   <a href="#oracledb.constructors">oracledb.constructors</a>
  &#8226;   <a href="#pandas._typing">pandas._typing</a>
  &#8226;   <a href="#pandas.core.arrays.datetimelike">pandas.core.arrays.datetimelike</a>
  &#8226;   <a href="#pandas.core.arrays.datetimes">pandas.core.arrays.datetimes</a>
@@ -9358,6 +9387,100 @@ imported by:
 imported by:
     <a href="#PIL.Image">PIL.Image</a>
  &#8226;   <a href="#openpyxl.xml">openpyxl.xml</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="dialog"></a>
+  <a target="code" href="-" type="text/plain"><tt>dialog</tt></a>
+<span class="moduletype">NamespacePackage</span>  <div class="import">
+imported by:
+    <a href="#dialog.DashboardLogDialog">dialog.DashboardLogDialog</a>
+ &#8226;   <a href="#dialog.MasterSearchDialog">dialog.MasterSearchDialog</a>
+ &#8226;   <a href="#dialog.ProductListDialog">dialog.ProductListDialog</a>
+ &#8226;   <a href="#dialog.ProductNameDialog">dialog.ProductNameDialog</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="dialog.DashboardLogDialog"></a>
+  <a target="code" href="///C:/Users/250327/PycharmProjects/factory_dashboard/dialog/DashboardLogDialog.py" type="text/plain"><tt>dialog.DashboardLogDialog</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#PyQt5.QtCore">PyQt5.QtCore</a>
+ &#8226;   <a href="#PyQt5.QtWidgets">PyQt5.QtWidgets</a>
+ &#8226;   <a href="#UTIL.db_handler">UTIL.db_handler</a>
+ &#8226;   <a href="#UTIL.utils_qt">UTIL.utils_qt</a>
+ &#8226;   <a href="#datetime">datetime</a>
+ &#8226;   <a href="#dialog">dialog</a>
+ &#8226;   <a href="#pandas">pandas</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#main.py">main.py</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="dialog.MasterSearchDialog"></a>
+  <a target="code" href="///C:/Users/250327/PycharmProjects/factory_dashboard/dialog/MasterSearchDialog.py" type="text/plain"><tt>dialog.MasterSearchDialog</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#PyQt5.QtWidgets">PyQt5.QtWidgets</a>
+ &#8226;   <a href="#UTIL.db_handler">UTIL.db_handler</a>
+ &#8226;   <a href="#UTIL.utils_qt">UTIL.utils_qt</a>
+ &#8226;   <a href="#dialog">dialog</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#dialog.ProductListDialog">dialog.ProductListDialog</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="dialog.ProductListDialog"></a>
+  <a target="code" href="///C:/Users/250327/PycharmProjects/factory_dashboard/dialog/ProductListDialog.py" type="text/plain"><tt>dialog.ProductListDialog</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#PyQt5.QtWidgets">PyQt5.QtWidgets</a>
+ &#8226;   <a href="#UTIL.db_handler">UTIL.db_handler</a>
+ &#8226;   <a href="#UTIL.utils_qt">UTIL.utils_qt</a>
+ &#8226;   <a href="#dialog">dialog</a>
+ &#8226;   <a href="#dialog.MasterSearchDialog">dialog.MasterSearchDialog</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#main.py">main.py</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="dialog.ProductNameDialog"></a>
+  <a target="code" href="///C:/Users/250327/PycharmProjects/factory_dashboard/dialog/ProductNameDialog.py" type="text/plain"><tt>dialog.ProductNameDialog</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#PyQt5.QtCore">PyQt5.QtCore</a>
+ &#8226;   <a href="#PyQt5.QtWidgets">PyQt5.QtWidgets</a>
+ &#8226;   <a href="#UTIL.db_handler">UTIL.db_handler</a>
+ &#8226;   <a href="#dialog">dialog</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#main.py">main.py</a>
 
   </div>
 
@@ -13472,7 +13595,6 @@ imported by:
  &#8226;   <a href="#numpy.__config__">numpy.__config__</a>
  &#8226;   <a href="#numpy._globals">numpy._globals</a>
  &#8226;   <a href="#numpy.f2py.symbolic">numpy.f2py.symbolic</a>
- &#8226;   <a href="#oracledb.enums">oracledb.enums</a>
  &#8226;   <a href="#packaging._elffile">packaging._elffile</a>
  &#8226;   <a href="#pandas.core.arrays.sparse.array">pandas.core.arrays.sparse.array</a>
  &#8226;   <a href="#pandas.core.interchange.dataframe_protocol">pandas.core.interchange.dataframe_protocol</a>
@@ -13801,10 +13923,6 @@ imported by:
  &#8226;   <a href="#openpyxl.utils.cell">openpyxl.utils.cell</a>
  &#8226;   <a href="#openpyxl.xml.functions">openpyxl.xml.functions</a>
  &#8226;   <a href="#operator">operator</a>
- &#8226;   <a href="#oracledb.connect_params">oracledb.connect_params</a>
- &#8226;   <a href="#oracledb.connection">oracledb.connection</a>
- &#8226;   <a href="#oracledb.pool">oracledb.pool</a>
- &#8226;   <a href="#oracledb.utils">oracledb.utils</a>
  &#8226;   <a href="#packaging._manylinux">packaging._manylinux</a>
  &#8226;   <a href="#packaging._musllinux">packaging._musllinux</a>
  &#8226;   <a href="#packaging.utils">packaging.utils</a>
@@ -15577,8 +15695,6 @@ imported by:
  &#8226;   <a href="#json.encoder">json.encoder</a>
  &#8226;   <a href="#json.scanner">json.scanner</a>
  &#8226;   <a href="#numpy.__config__">numpy.__config__</a>
- &#8226;   <a href="#oracledb.builtin_hooks">oracledb.builtin_hooks</a>
- &#8226;   <a href="#oracledb.soda">oracledb.soda</a>
  &#8226;   <a href="#pandas.core.arrays.arrow.extension_types">pandas.core.arrays.arrow.extension_types</a>
  &#8226;   <a href="#pandas.core.generic">pandas.core.generic</a>
  &#8226;   <a href="#pandas.io.excel._odswriter">pandas.io.excel._odswriter</a>
@@ -15789,6 +15905,36 @@ imported by:
  &#8226;   <a href="#unittest._log">unittest._log</a>
  &#8226;   <a href="#wheel.util">wheel.util</a>
  &#8226;   <a href="#wheel.vendored.packaging.tags">wheel.vendored.packaging.tags</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="logic"></a>
+  <a target="code" href="-" type="text/plain"><tt>logic</tt></a>
+<span class="moduletype">NamespacePackage</span>  <div class="import">
+imported by:
+    <a href="#logic.cal_values">logic.cal_values</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="logic.cal_values"></a>
+  <a target="code" href="///C:/Users/250327/PycharmProjects/factory_dashboard/logic/cal_values.py" type="text/plain"><tt>logic.cal_values</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#UTIL.db_handler">UTIL.db_handler</a>
+ &#8226;   <a href="#datetime">datetime</a>
+ &#8226;   <a href="#logic">logic</a>
+ &#8226;   <a href="#pandas">pandas</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#main.py">main.py</a>
 
   </div>
 
@@ -29034,870 +29180,6 @@ imported by:
 </div>
 
 <div class="node">
-  <a name="oracle"></a>
-  <a target="code" href="///C:/Users/250327/PycharmProjects/factory_dashboard/oracle.py" type="text/plain"><tt>oracle</tt></a>
-<span class="moduletype">SourceModule</span>  <div class="import">
-imports:
-    <a href="#oracledb">oracledb</a>
-
-  </div>
-  <div class="import">
-imported by:
-    <a href="#main.py">main.py</a>
-
-  </div>
-
-</div>
-
-<div class="node">
-  <a name="oracledb"></a>
-  <a target="code" href="///C:/Users/250327/PycharmProjects/factory_dashboard/.venv/Lib/site-packages/oracledb/__init__.py" type="text/plain"><tt>oracledb</tt></a>
-<span class="moduletype">Package</span>  <div class="import">
-imports:
-    <a href="#collections">collections</a>
- &#8226;   <a href="#oracledb">oracledb</a>
- &#8226;   <a href="#oracledb.__name__">oracledb.__name__</a>
- &#8226;   <a href="#oracledb.aq">oracledb.aq</a>
- &#8226;   <a href="#oracledb.arrow_array">oracledb.arrow_array</a>
- &#8226;   <a href="#oracledb.base_impl">oracledb.base_impl</a>
- &#8226;   <a href="#oracledb.builtin_hooks">oracledb.builtin_hooks</a>
- &#8226;   <a href="#oracledb.connect_params">oracledb.connect_params</a>
- &#8226;   <a href="#oracledb.connection">oracledb.connection</a>
- &#8226;   <a href="#oracledb.constants">oracledb.constants</a>
- &#8226;   <a href="#oracledb.constructors">oracledb.constructors</a>
- &#8226;   <a href="#oracledb.cursor">oracledb.cursor</a>
- &#8226;   <a href="#oracledb.dataframe">oracledb.dataframe</a>
- &#8226;   <a href="#oracledb.dbobject">oracledb.dbobject</a>
- &#8226;   <a href="#oracledb.defaults">oracledb.defaults</a>
- &#8226;   <a href="#oracledb.driver_mode">oracledb.driver_mode</a>
- &#8226;   <a href="#oracledb.dsn">oracledb.dsn</a>
- &#8226;   <a href="#oracledb.enums">oracledb.enums</a>
- &#8226;   <a href="#oracledb.errors">oracledb.errors</a>
- &#8226;   <a href="#oracledb.exceptions">oracledb.exceptions</a>
- &#8226;   <a href="#oracledb.fetch_info">oracledb.fetch_info</a>
- &#8226;   <a href="#oracledb.future">oracledb.future</a>
- &#8226;   <a href="#oracledb.lob">oracledb.lob</a>
- &#8226;   <a href="#oracledb.pipeline">oracledb.pipeline</a>
- &#8226;   <a href="#oracledb.pool">oracledb.pool</a>
- &#8226;   <a href="#oracledb.pool_params">oracledb.pool_params</a>
- &#8226;   <a href="#oracledb.soda">oracledb.soda</a>
- &#8226;   <a href="#oracledb.sparse_vector">oracledb.sparse_vector</a>
- &#8226;   <a href="#oracledb.subscr">oracledb.subscr</a>
- &#8226;   <a href="#oracledb.thick_impl">oracledb.thick_impl</a>
- &#8226;   <a href="#oracledb.thin_impl">oracledb.thin_impl</a>
- &#8226;   <a href="#oracledb.utils">oracledb.utils</a>
- &#8226;   <a href="#oracledb.var">oracledb.var</a>
- &#8226;   <a href="#oracledb.version">oracledb.version</a>
- &#8226;   <a href="#sys">sys</a>
- &#8226;   <a href="#warnings">warnings</a>
-
-  </div>
-  <div class="import">
-imported by:
-    <a href="#oracle">oracle</a>
- &#8226;   <a href="#oracledb">oracledb</a>
- &#8226;   <a href="#oracledb.aq">oracledb.aq</a>
- &#8226;   <a href="#oracledb.arrow_array">oracledb.arrow_array</a>
- &#8226;   <a href="#oracledb.arrow_impl">oracledb.arrow_impl</a>
- &#8226;   <a href="#oracledb.base">oracledb.base</a>
- &#8226;   <a href="#oracledb.base_impl">oracledb.base_impl</a>
- &#8226;   <a href="#oracledb.builtin_hooks">oracledb.builtin_hooks</a>
- &#8226;   <a href="#oracledb.connect_params">oracledb.connect_params</a>
- &#8226;   <a href="#oracledb.connection">oracledb.connection</a>
- &#8226;   <a href="#oracledb.constants">oracledb.constants</a>
- &#8226;   <a href="#oracledb.constructors">oracledb.constructors</a>
- &#8226;   <a href="#oracledb.cursor">oracledb.cursor</a>
- &#8226;   <a href="#oracledb.dataframe">oracledb.dataframe</a>
- &#8226;   <a href="#oracledb.dbobject">oracledb.dbobject</a>
- &#8226;   <a href="#oracledb.defaults">oracledb.defaults</a>
- &#8226;   <a href="#oracledb.driver_mode">oracledb.driver_mode</a>
- &#8226;   <a href="#oracledb.dsn">oracledb.dsn</a>
- &#8226;   <a href="#oracledb.enums">oracledb.enums</a>
- &#8226;   <a href="#oracledb.errors">oracledb.errors</a>
- &#8226;   <a href="#oracledb.exceptions">oracledb.exceptions</a>
- &#8226;   <a href="#oracledb.fetch_info">oracledb.fetch_info</a>
- &#8226;   <a href="#oracledb.future">oracledb.future</a>
- &#8226;   <a href="#oracledb.lob">oracledb.lob</a>
- &#8226;   <a href="#oracledb.pipeline">oracledb.pipeline</a>
- &#8226;   <a href="#oracledb.pool">oracledb.pool</a>
- &#8226;   <a href="#oracledb.pool_params">oracledb.pool_params</a>
- &#8226;   <a href="#oracledb.soda">oracledb.soda</a>
- &#8226;   <a href="#oracledb.sparse_vector">oracledb.sparse_vector</a>
- &#8226;   <a href="#oracledb.subscr">oracledb.subscr</a>
- &#8226;   <a href="#oracledb.thick_impl">oracledb.thick_impl</a>
- &#8226;   <a href="#oracledb.thin_impl">oracledb.thin_impl</a>
- &#8226;   <a href="#oracledb.utils">oracledb.utils</a>
- &#8226;   <a href="#oracledb.var">oracledb.var</a>
- &#8226;   <a href="#oracledb.version">oracledb.version</a>
-
-  </div>
-
-</div>
-
-<div class="node">
-  <a name="oracledb.__name__"></a>
-  <a target="code" href="" type="text/plain"><tt>oracledb.__name__</tt></a>
-<span class="moduletype">MissingModule</span>  <div class="import">
-imported by:
-    <a href="#oracledb">oracledb</a>
- &#8226;   <a href="#oracledb.base">oracledb.base</a>
-
-  </div>
-
-</div>
-
-<div class="node">
-  <a name="oracledb.aq"></a>
-  <a target="code" href="///C:/Users/250327/PycharmProjects/factory_dashboard/.venv/Lib/site-packages/oracledb/aq.py" type="text/plain"><tt>oracledb.aq</tt></a>
-<span class="moduletype">SourceModule</span>  <div class="import">
-imports:
-    <a href="#datetime">datetime</a>
- &#8226;   <a href="#oracledb">oracledb</a>
- &#8226;   <a href="#oracledb.base">oracledb.base</a>
- &#8226;   <a href="#oracledb.connection">oracledb.connection</a>
- &#8226;   <a href="#oracledb.dbobject">oracledb.dbobject</a>
- &#8226;   <a href="#oracledb.errors">oracledb.errors</a>
- &#8226;   <a href="#typing">typing</a>
-
-  </div>
-  <div class="import">
-imported by:
-    <a href="#oracledb">oracledb</a>
- &#8226;   <a href="#oracledb.connection">oracledb.connection</a>
-
-  </div>
-
-</div>
-
-<div class="node">
-  <a name="oracledb.arrow_array"></a>
-  <a target="code" href="///C:/Users/250327/PycharmProjects/factory_dashboard/.venv/Lib/site-packages/oracledb/arrow_array.py" type="text/plain"><tt>oracledb.arrow_array</tt></a>
-<span class="moduletype">SourceModule</span>  <div class="import">
-imports:
-    <a href="#oracledb">oracledb</a>
- &#8226;   <a href="#oracledb.arrow_impl">oracledb.arrow_impl</a>
- &#8226;   <a href="#oracledb.base">oracledb.base</a>
- &#8226;   <a href="#oracledb.errors">oracledb.errors</a>
-
-  </div>
-  <div class="import">
-imported by:
-    <a href="#oracledb">oracledb</a>
- &#8226;   <a href="#oracledb.dataframe">oracledb.dataframe</a>
- &#8226;   <a href="#oracledb.utils">oracledb.utils</a>
-
-  </div>
-
-</div>
-
-<div class="node">
-  <a name="oracledb.arrow_impl"></a>
-  <tt>oracledb.arrow_impl</tt> <span class="moduletype"><tt>C:\Users\250327\PycharmProjects\factory_dashboard\.venv\Lib\site-packages\oracledb\arrow_impl.cp311-win_amd64.pyd</tt></span>  <div class="import">
-imports:
-    <a href="#oracledb">oracledb</a>
-
-  </div>
-  <div class="import">
-imported by:
-    <a href="#oracledb.arrow_array">oracledb.arrow_array</a>
- &#8226;   <a href="#oracledb.connection">oracledb.connection</a>
- &#8226;   <a href="#oracledb.dataframe">oracledb.dataframe</a>
-
-  </div>
-
-</div>
-
-<div class="node">
-  <a name="oracledb.base"></a>
-  <a target="code" href="///C:/Users/250327/PycharmProjects/factory_dashboard/.venv/Lib/site-packages/oracledb/base.py" type="text/plain"><tt>oracledb.base</tt></a>
-<span class="moduletype">SourceModule</span>  <div class="import">
-imports:
-    <a href="#oracledb">oracledb</a>
- &#8226;   <a href="#oracledb.__name__">oracledb.__name__</a>
-
-  </div>
-  <div class="import">
-imported by:
-    <a href="#oracledb.aq">oracledb.aq</a>
- &#8226;   <a href="#oracledb.arrow_array">oracledb.arrow_array</a>
- &#8226;   <a href="#oracledb.connect_params">oracledb.connect_params</a>
- &#8226;   <a href="#oracledb.connection">oracledb.connection</a>
- &#8226;   <a href="#oracledb.cursor">oracledb.cursor</a>
- &#8226;   <a href="#oracledb.dataframe">oracledb.dataframe</a>
- &#8226;   <a href="#oracledb.dbobject">oracledb.dbobject</a>
- &#8226;   <a href="#oracledb.defaults">oracledb.defaults</a>
- &#8226;   <a href="#oracledb.fetch_info">oracledb.fetch_info</a>
- &#8226;   <a href="#oracledb.lob">oracledb.lob</a>
- &#8226;   <a href="#oracledb.pipeline">oracledb.pipeline</a>
- &#8226;   <a href="#oracledb.pool">oracledb.pool</a>
- &#8226;   <a href="#oracledb.soda">oracledb.soda</a>
- &#8226;   <a href="#oracledb.sparse_vector">oracledb.sparse_vector</a>
- &#8226;   <a href="#oracledb.subscr">oracledb.subscr</a>
- &#8226;   <a href="#oracledb.var">oracledb.var</a>
-
-  </div>
-
-</div>
-
-<div class="node">
-  <a name="oracledb.base_impl"></a>
-  <tt>oracledb.base_impl</tt> <span class="moduletype"><tt>C:\Users\250327\PycharmProjects\factory_dashboard\.venv\Lib\site-packages\oracledb\base_impl.cp311-win_amd64.pyd</tt></span>  <div class="import">
-imports:
-    <a href="#oracledb">oracledb</a>
-
-  </div>
-  <div class="import">
-imported by:
-    <a href="#oracledb">oracledb</a>
- &#8226;   <a href="#oracledb.connect_params">oracledb.connect_params</a>
- &#8226;   <a href="#oracledb.connection">oracledb.connection</a>
- &#8226;   <a href="#oracledb.cursor">oracledb.cursor</a>
- &#8226;   <a href="#oracledb.dbobject">oracledb.dbobject</a>
- &#8226;   <a href="#oracledb.defaults">oracledb.defaults</a>
- &#8226;   <a href="#oracledb.enums">oracledb.enums</a>
- &#8226;   <a href="#oracledb.fetch_info">oracledb.fetch_info</a>
- &#8226;   <a href="#oracledb.lob">oracledb.lob</a>
- &#8226;   <a href="#oracledb.pipeline">oracledb.pipeline</a>
- &#8226;   <a href="#oracledb.pool">oracledb.pool</a>
- &#8226;   <a href="#oracledb.pool_params">oracledb.pool_params</a>
- &#8226;   <a href="#oracledb.sparse_vector">oracledb.sparse_vector</a>
- &#8226;   <a href="#oracledb.utils">oracledb.utils</a>
- &#8226;   <a href="#oracledb.var">oracledb.var</a>
-
-  </div>
-
-</div>
-
-<div class="node">
-  <a name="oracledb.builtin_hooks"></a>
-  <a target="code" href="///C:/Users/250327/PycharmProjects/factory_dashboard/.venv/Lib/site-packages/oracledb/builtin_hooks.py" type="text/plain"><tt>oracledb.builtin_hooks</tt></a>
-<span class="moduletype">SourceModule</span>  <div class="import">
-imports:
-    <a href="#base64">base64</a>
- &#8226;   <a href="#json">json</a>
- &#8226;   <a href="#oracledb">oracledb</a>
- &#8226;   <a href="#oracledb.errors">oracledb.errors</a>
- &#8226;   <a href="#oracledb.utils">oracledb.utils</a>
- &#8226;   <a href="#os">os</a>
- &#8226;   <a href="#urllib.parse">urllib.parse</a>
- &#8226;   <a href="#warnings">warnings</a>
-
-  </div>
-  <div class="import">
-imported by:
-    <a href="#oracledb">oracledb</a>
-
-  </div>
-
-</div>
-
-<div class="node">
-  <a name="oracledb.connect_params"></a>
-  <a target="code" href="///C:/Users/250327/PycharmProjects/factory_dashboard/.venv/Lib/site-packages/oracledb/connect_params.py" type="text/plain"><tt>oracledb.connect_params</tt></a>
-<span class="moduletype">SourceModule</span>  <div class="import">
-imports:
-    <a href="#functools">functools</a>
- &#8226;   <a href="#oracledb">oracledb</a>
- &#8226;   <a href="#oracledb.base">oracledb.base</a>
- &#8226;   <a href="#oracledb.base_impl">oracledb.base_impl</a>
- &#8226;   <a href="#oracledb.utils">oracledb.utils</a>
- &#8226;   <a href="#ssl">ssl</a>
- &#8226;   <a href="#typing">typing</a>
-
-  </div>
-  <div class="import">
-imported by:
-    <a href="#oracledb">oracledb</a>
- &#8226;   <a href="#oracledb.connection">oracledb.connection</a>
- &#8226;   <a href="#oracledb.pool_params">oracledb.pool_params</a>
-
-  </div>
-
-</div>
-
-<div class="node">
-  <a name="oracledb.connection"></a>
-  <a target="code" href="///C:/Users/250327/PycharmProjects/factory_dashboard/.venv/Lib/site-packages/oracledb/connection.py" type="text/plain"><tt>oracledb.connection</tt></a>
-<span class="moduletype">SourceModule</span>  <div class="import">
-imports:
-    <a href="#collections">collections</a>
- &#8226;   <a href="#functools">functools</a>
- &#8226;   <a href="#oracledb">oracledb</a>
- &#8226;   <a href="#oracledb.aq">oracledb.aq</a>
- &#8226;   <a href="#oracledb.arrow_impl">oracledb.arrow_impl</a>
- &#8226;   <a href="#oracledb.base">oracledb.base</a>
- &#8226;   <a href="#oracledb.base_impl">oracledb.base_impl</a>
- &#8226;   <a href="#oracledb.connect_params">oracledb.connect_params</a>
- &#8226;   <a href="#oracledb.cursor">oracledb.cursor</a>
- &#8226;   <a href="#oracledb.dataframe">oracledb.dataframe</a>
- &#8226;   <a href="#oracledb.dbobject">oracledb.dbobject</a>
- &#8226;   <a href="#oracledb.driver_mode">oracledb.driver_mode</a>
- &#8226;   <a href="#oracledb.errors">oracledb.errors</a>
- &#8226;   <a href="#oracledb.lob">oracledb.lob</a>
- &#8226;   <a href="#oracledb.pipeline">oracledb.pipeline</a>
- &#8226;   <a href="#oracledb.pool">oracledb.pool</a>
- &#8226;   <a href="#oracledb.soda">oracledb.soda</a>
- &#8226;   <a href="#oracledb.subscr">oracledb.subscr</a>
- &#8226;   <a href="#oracledb.thick_impl">oracledb.thick_impl</a>
- &#8226;   <a href="#oracledb.thin_impl">oracledb.thin_impl</a>
- &#8226;   <a href="#oracledb.utils">oracledb.utils</a>
- &#8226;   <a href="#ssl">ssl</a>
- &#8226;   <a href="#typing">typing</a>
-
-  </div>
-  <div class="import">
-imported by:
-    <a href="#oracledb">oracledb</a>
- &#8226;   <a href="#oracledb.aq">oracledb.aq</a>
- &#8226;   <a href="#oracledb.cursor">oracledb.cursor</a>
- &#8226;   <a href="#oracledb.pool">oracledb.pool</a>
- &#8226;   <a href="#oracledb.subscr">oracledb.subscr</a>
-
-  </div>
-
-</div>
-
-<div class="node">
-  <a name="oracledb.constants"></a>
-  <a target="code" href="///C:/Users/250327/PycharmProjects/factory_dashboard/.venv/Lib/site-packages/oracledb/constants.py" type="text/plain"><tt>oracledb.constants</tt></a>
-<span class="moduletype">SourceModule</span>  <div class="import">
-imports:
-    <a href="#oracledb">oracledb</a>
-
-  </div>
-  <div class="import">
-imported by:
-    <a href="#oracledb">oracledb</a>
- &#8226;   <a href="#oracledb.fetch_info">oracledb.fetch_info</a>
-
-  </div>
-
-</div>
-
-<div class="node">
-  <a name="oracledb.constructors"></a>
-  <a target="code" href="///C:/Users/250327/PycharmProjects/factory_dashboard/.venv/Lib/site-packages/oracledb/constructors.py" type="text/plain"><tt>oracledb.constructors</tt></a>
-<span class="moduletype">SourceModule</span>  <div class="import">
-imports:
-    <a href="#datetime">datetime</a>
- &#8226;   <a href="#oracledb">oracledb</a>
- &#8226;   <a href="#oracledb.errors">oracledb.errors</a>
- &#8226;   <a href="#typing">typing</a>
-
-  </div>
-  <div class="import">
-imported by:
-    <a href="#oracledb">oracledb</a>
-
-  </div>
-
-</div>
-
-<div class="node">
-  <a name="oracledb.cursor"></a>
-  <a target="code" href="///C:/Users/250327/PycharmProjects/factory_dashboard/.venv/Lib/site-packages/oracledb/cursor.py" type="text/plain"><tt>oracledb.cursor</tt></a>
-<span class="moduletype">SourceModule</span>  <div class="import">
-imports:
-    <a href="#oracledb">oracledb</a>
- &#8226;   <a href="#oracledb.base">oracledb.base</a>
- &#8226;   <a href="#oracledb.base_impl">oracledb.base_impl</a>
- &#8226;   <a href="#oracledb.connection">oracledb.connection</a>
- &#8226;   <a href="#oracledb.dbobject">oracledb.dbobject</a>
- &#8226;   <a href="#oracledb.errors">oracledb.errors</a>
- &#8226;   <a href="#oracledb.fetch_info">oracledb.fetch_info</a>
- &#8226;   <a href="#oracledb.utils">oracledb.utils</a>
- &#8226;   <a href="#oracledb.var">oracledb.var</a>
- &#8226;   <a href="#typing">typing</a>
-
-  </div>
-  <div class="import">
-imported by:
-    <a href="#oracledb">oracledb</a>
- &#8226;   <a href="#oracledb.connection">oracledb.connection</a>
-
-  </div>
-
-</div>
-
-<div class="node">
-  <a name="oracledb.dataframe"></a>
-  <a target="code" href="///C:/Users/250327/PycharmProjects/factory_dashboard/.venv/Lib/site-packages/oracledb/dataframe.py" type="text/plain"><tt>oracledb.dataframe</tt></a>
-<span class="moduletype">SourceModule</span>  <div class="import">
-imports:
-    <a href="#oracledb">oracledb</a>
- &#8226;   <a href="#oracledb.arrow_array">oracledb.arrow_array</a>
- &#8226;   <a href="#oracledb.arrow_impl">oracledb.arrow_impl</a>
- &#8226;   <a href="#oracledb.base">oracledb.base</a>
- &#8226;   <a href="#oracledb.errors">oracledb.errors</a>
-
-  </div>
-  <div class="import">
-imported by:
-    <a href="#oracledb">oracledb</a>
- &#8226;   <a href="#oracledb.connection">oracledb.connection</a>
- &#8226;   <a href="#oracledb.utils">oracledb.utils</a>
-
-  </div>
-
-</div>
-
-<div class="node">
-  <a name="oracledb.dbobject"></a>
-  <a target="code" href="///C:/Users/250327/PycharmProjects/factory_dashboard/.venv/Lib/site-packages/oracledb/dbobject.py" type="text/plain"><tt>oracledb.dbobject</tt></a>
-<span class="moduletype">SourceModule</span>  <div class="import">
-imports:
-    <a href="#oracledb">oracledb</a>
- &#8226;   <a href="#oracledb.base">oracledb.base</a>
- &#8226;   <a href="#oracledb.base_impl">oracledb.base_impl</a>
- &#8226;   <a href="#oracledb.errors">oracledb.errors</a>
- &#8226;   <a href="#typing">typing</a>
-
-  </div>
-  <div class="import">
-imported by:
-    <a href="#oracledb">oracledb</a>
- &#8226;   <a href="#oracledb.aq">oracledb.aq</a>
- &#8226;   <a href="#oracledb.connection">oracledb.connection</a>
- &#8226;   <a href="#oracledb.cursor">oracledb.cursor</a>
- &#8226;   <a href="#oracledb.fetch_info">oracledb.fetch_info</a>
- &#8226;   <a href="#oracledb.var">oracledb.var</a>
-
-  </div>
-
-</div>
-
-<div class="node">
-  <a name="oracledb.defaults"></a>
-  <a target="code" href="///C:/Users/250327/PycharmProjects/factory_dashboard/.venv/Lib/site-packages/oracledb/defaults.py" type="text/plain"><tt>oracledb.defaults</tt></a>
-<span class="moduletype">SourceModule</span>  <div class="import">
-imports:
-    <a href="#oracledb">oracledb</a>
- &#8226;   <a href="#oracledb.base">oracledb.base</a>
- &#8226;   <a href="#oracledb.base_impl">oracledb.base_impl</a>
- &#8226;   <a href="#oracledb.errors">oracledb.errors</a>
-
-  </div>
-  <div class="import">
-imported by:
-    <a href="#oracledb">oracledb</a>
- &#8226;   <a href="#oracledb.pipeline">oracledb.pipeline</a>
-
-  </div>
-
-</div>
-
-<div class="node">
-  <a name="oracledb.driver_mode"></a>
-  <a target="code" href="///C:/Users/250327/PycharmProjects/factory_dashboard/.venv/Lib/site-packages/oracledb/driver_mode.py" type="text/plain"><tt>oracledb.driver_mode</tt></a>
-<span class="moduletype">SourceModule</span>  <div class="import">
-imports:
-    <a href="#oracledb">oracledb</a>
- &#8226;   <a href="#oracledb.errors">oracledb.errors</a>
- &#8226;   <a href="#threading">threading</a>
-
-  </div>
-  <div class="import">
-imported by:
-    <a href="#oracledb">oracledb</a>
- &#8226;   <a href="#oracledb.connection">oracledb.connection</a>
- &#8226;   <a href="#oracledb.errors">oracledb.errors</a>
- &#8226;   <a href="#oracledb.pool">oracledb.pool</a>
- &#8226;   <a href="#oracledb.utils">oracledb.utils</a>
-
-  </div>
-
-</div>
-
-<div class="node">
-  <a name="oracledb.dsn"></a>
-  <a target="code" href="///C:/Users/250327/PycharmProjects/factory_dashboard/.venv/Lib/site-packages/oracledb/dsn.py" type="text/plain"><tt>oracledb.dsn</tt></a>
-<span class="moduletype">SourceModule</span>  <div class="import">
-imports:
-    <a href="#oracledb">oracledb</a>
- &#8226;   <a href="#oracledb.errors">oracledb.errors</a>
-
-  </div>
-  <div class="import">
-imported by:
-    <a href="#oracledb">oracledb</a>
-
-  </div>
-
-</div>
-
-<div class="node">
-  <a name="oracledb.enums"></a>
-  <a target="code" href="///C:/Users/250327/PycharmProjects/factory_dashboard/.venv/Lib/site-packages/oracledb/enums.py" type="text/plain"><tt>oracledb.enums</tt></a>
-<span class="moduletype">SourceModule</span>  <div class="import">
-imports:
-    <a href="#enum">enum</a>
- &#8226;   <a href="#oracledb">oracledb</a>
- &#8226;   <a href="#oracledb.base_impl">oracledb.base_impl</a>
-
-  </div>
-  <div class="import">
-imported by:
-    <a href="#oracledb">oracledb</a>
- &#8226;   <a href="#oracledb.pipeline">oracledb.pipeline</a>
-
-  </div>
-
-</div>
-
-<div class="node">
-  <a name="oracledb.errors"></a>
-  <a target="code" href="///C:/Users/250327/PycharmProjects/factory_dashboard/.venv/Lib/site-packages/oracledb/errors.py" type="text/plain"><tt>oracledb.errors</tt></a>
-<span class="moduletype">SourceModule</span>  <div class="import">
-imports:
-    <a href="#oracledb">oracledb</a>
- &#8226;   <a href="#oracledb.driver_mode">oracledb.driver_mode</a>
- &#8226;   <a href="#oracledb.exceptions">oracledb.exceptions</a>
- &#8226;   <a href="#re">re</a>
-
-  </div>
-  <div class="import">
-imported by:
-    <a href="#oracledb">oracledb</a>
- &#8226;   <a href="#oracledb.aq">oracledb.aq</a>
- &#8226;   <a href="#oracledb.arrow_array">oracledb.arrow_array</a>
- &#8226;   <a href="#oracledb.builtin_hooks">oracledb.builtin_hooks</a>
- &#8226;   <a href="#oracledb.connection">oracledb.connection</a>
- &#8226;   <a href="#oracledb.constructors">oracledb.constructors</a>
- &#8226;   <a href="#oracledb.cursor">oracledb.cursor</a>
- &#8226;   <a href="#oracledb.dataframe">oracledb.dataframe</a>
- &#8226;   <a href="#oracledb.dbobject">oracledb.dbobject</a>
- &#8226;   <a href="#oracledb.defaults">oracledb.defaults</a>
- &#8226;   <a href="#oracledb.driver_mode">oracledb.driver_mode</a>
- &#8226;   <a href="#oracledb.dsn">oracledb.dsn</a>
- &#8226;   <a href="#oracledb.lob">oracledb.lob</a>
- &#8226;   <a href="#oracledb.pipeline">oracledb.pipeline</a>
- &#8226;   <a href="#oracledb.pool">oracledb.pool</a>
- &#8226;   <a href="#oracledb.soda">oracledb.soda</a>
- &#8226;   <a href="#oracledb.utils">oracledb.utils</a>
-
-  </div>
-
-</div>
-
-<div class="node">
-  <a name="oracledb.exceptions"></a>
-  <a target="code" href="///C:/Users/250327/PycharmProjects/factory_dashboard/.venv/Lib/site-packages/oracledb/exceptions.py" type="text/plain"><tt>oracledb.exceptions</tt></a>
-<span class="moduletype">SourceModule</span>  <div class="import">
-imports:
-    <a href="#oracledb">oracledb</a>
-
-  </div>
-  <div class="import">
-imported by:
-    <a href="#oracledb">oracledb</a>
- &#8226;   <a href="#oracledb.errors">oracledb.errors</a>
-
-  </div>
-
-</div>
-
-<div class="node">
-  <a name="oracledb.fetch_info"></a>
-  <a target="code" href="///C:/Users/250327/PycharmProjects/factory_dashboard/.venv/Lib/site-packages/oracledb/fetch_info.py" type="text/plain"><tt>oracledb.fetch_info</tt></a>
-<span class="moduletype">SourceModule</span>  <div class="import">
-imports:
-    <a href="#oracledb">oracledb</a>
- &#8226;   <a href="#oracledb.base">oracledb.base</a>
- &#8226;   <a href="#oracledb.base_impl">oracledb.base_impl</a>
- &#8226;   <a href="#oracledb.constants">oracledb.constants</a>
- &#8226;   <a href="#oracledb.dbobject">oracledb.dbobject</a>
- &#8226;   <a href="#typing">typing</a>
-
-  </div>
-  <div class="import">
-imported by:
-    <a href="#oracledb">oracledb</a>
- &#8226;   <a href="#oracledb.cursor">oracledb.cursor</a>
- &#8226;   <a href="#oracledb.pipeline">oracledb.pipeline</a>
-
-  </div>
-
-</div>
-
-<div class="node">
-  <a name="oracledb.future"></a>
-  <a target="code" href="///C:/Users/250327/PycharmProjects/factory_dashboard/.venv/Lib/site-packages/oracledb/future.py" type="text/plain"><tt>oracledb.future</tt></a>
-<span class="moduletype">SourceModule</span>  <div class="import">
-imports:
-    <a href="#oracledb">oracledb</a>
-
-  </div>
-  <div class="import">
-imported by:
-    <a href="#oracledb">oracledb</a>
-
-  </div>
-
-</div>
-
-<div class="node">
-  <a name="oracledb.lob"></a>
-  <a target="code" href="///C:/Users/250327/PycharmProjects/factory_dashboard/.venv/Lib/site-packages/oracledb/lob.py" type="text/plain"><tt>oracledb.lob</tt></a>
-<span class="moduletype">SourceModule</span>  <div class="import">
-imports:
-    <a href="#oracledb">oracledb</a>
- &#8226;   <a href="#oracledb.base">oracledb.base</a>
- &#8226;   <a href="#oracledb.base_impl">oracledb.base_impl</a>
- &#8226;   <a href="#oracledb.errors">oracledb.errors</a>
- &#8226;   <a href="#typing">typing</a>
-
-  </div>
-  <div class="import">
-imported by:
-    <a href="#oracledb">oracledb</a>
- &#8226;   <a href="#oracledb.connection">oracledb.connection</a>
-
-  </div>
-
-</div>
-
-<div class="node">
-  <a name="oracledb.pipeline"></a>
-  <a target="code" href="///C:/Users/250327/PycharmProjects/factory_dashboard/.venv/Lib/site-packages/oracledb/pipeline.py" type="text/plain"><tt>oracledb.pipeline</tt></a>
-<span class="moduletype">SourceModule</span>  <div class="import">
-imports:
-    <a href="#oracledb">oracledb</a>
- &#8226;   <a href="#oracledb.base">oracledb.base</a>
- &#8226;   <a href="#oracledb.base_impl">oracledb.base_impl</a>
- &#8226;   <a href="#oracledb.defaults">oracledb.defaults</a>
- &#8226;   <a href="#oracledb.enums">oracledb.enums</a>
- &#8226;   <a href="#oracledb.errors">oracledb.errors</a>
- &#8226;   <a href="#oracledb.fetch_info">oracledb.fetch_info</a>
- &#8226;   <a href="#oracledb.utils">oracledb.utils</a>
- &#8226;   <a href="#typing">typing</a>
-
-  </div>
-  <div class="import">
-imported by:
-    <a href="#oracledb">oracledb</a>
- &#8226;   <a href="#oracledb.connection">oracledb.connection</a>
-
-  </div>
-
-</div>
-
-<div class="node">
-  <a name="oracledb.pool"></a>
-  <a target="code" href="///C:/Users/250327/PycharmProjects/factory_dashboard/.venv/Lib/site-packages/oracledb/pool.py" type="text/plain"><tt>oracledb.pool</tt></a>
-<span class="moduletype">SourceModule</span>  <div class="import">
-imports:
-    <a href="#functools">functools</a>
- &#8226;   <a href="#oracledb">oracledb</a>
- &#8226;   <a href="#oracledb.base">oracledb.base</a>
- &#8226;   <a href="#oracledb.base_impl">oracledb.base_impl</a>
- &#8226;   <a href="#oracledb.connection">oracledb.connection</a>
- &#8226;   <a href="#oracledb.driver_mode">oracledb.driver_mode</a>
- &#8226;   <a href="#oracledb.errors">oracledb.errors</a>
- &#8226;   <a href="#oracledb.pool_params">oracledb.pool_params</a>
- &#8226;   <a href="#oracledb.thick_impl">oracledb.thick_impl</a>
- &#8226;   <a href="#oracledb.thin_impl">oracledb.thin_impl</a>
- &#8226;   <a href="#ssl">ssl</a>
- &#8226;   <a href="#threading">threading</a>
- &#8226;   <a href="#typing">typing</a>
-
-  </div>
-  <div class="import">
-imported by:
-    <a href="#oracledb">oracledb</a>
- &#8226;   <a href="#oracledb.connection">oracledb.connection</a>
-
-  </div>
-
-</div>
-
-<div class="node">
-  <a name="oracledb.pool_params"></a>
-  <a target="code" href="///C:/Users/250327/PycharmProjects/factory_dashboard/.venv/Lib/site-packages/oracledb/pool_params.py" type="text/plain"><tt>oracledb.pool_params</tt></a>
-<span class="moduletype">SourceModule</span>  <div class="import">
-imports:
-    <a href="#oracledb">oracledb</a>
- &#8226;   <a href="#oracledb.base_impl">oracledb.base_impl</a>
- &#8226;   <a href="#oracledb.connect_params">oracledb.connect_params</a>
- &#8226;   <a href="#oracledb.utils">oracledb.utils</a>
- &#8226;   <a href="#ssl">ssl</a>
- &#8226;   <a href="#typing">typing</a>
-
-  </div>
-  <div class="import">
-imported by:
-    <a href="#oracledb">oracledb</a>
- &#8226;   <a href="#oracledb.pool">oracledb.pool</a>
-
-  </div>
-
-</div>
-
-<div class="node">
-  <a name="oracledb.soda"></a>
-  <a target="code" href="///C:/Users/250327/PycharmProjects/factory_dashboard/.venv/Lib/site-packages/oracledb/soda.py" type="text/plain"><tt>oracledb.soda</tt></a>
-<span class="moduletype">SourceModule</span>  <div class="import">
-imports:
-    <a href="#json">json</a>
- &#8226;   <a href="#oracledb">oracledb</a>
- &#8226;   <a href="#oracledb.base">oracledb.base</a>
- &#8226;   <a href="#oracledb.errors">oracledb.errors</a>
- &#8226;   <a href="#typing">typing</a>
- &#8226;   <a href="#typing_extensions">typing_extensions</a>
-
-  </div>
-  <div class="import">
-imported by:
-    <a href="#oracledb">oracledb</a>
- &#8226;   <a href="#oracledb.connection">oracledb.connection</a>
-
-  </div>
-
-</div>
-
-<div class="node">
-  <a name="oracledb.sparse_vector"></a>
-  <a target="code" href="///C:/Users/250327/PycharmProjects/factory_dashboard/.venv/Lib/site-packages/oracledb/sparse_vector.py" type="text/plain"><tt>oracledb.sparse_vector</tt></a>
-<span class="moduletype">SourceModule</span>  <div class="import">
-imports:
-    <a href="#array">array</a>
- &#8226;   <a href="#oracledb">oracledb</a>
- &#8226;   <a href="#oracledb.base">oracledb.base</a>
- &#8226;   <a href="#oracledb.base_impl">oracledb.base_impl</a>
- &#8226;   <a href="#typing">typing</a>
-
-  </div>
-  <div class="import">
-imported by:
-    <a href="#oracledb">oracledb</a>
-
-  </div>
-
-</div>
-
-<div class="node">
-  <a name="oracledb.subscr"></a>
-  <a target="code" href="///C:/Users/250327/PycharmProjects/factory_dashboard/.venv/Lib/site-packages/oracledb/subscr.py" type="text/plain"><tt>oracledb.subscr</tt></a>
-<span class="moduletype">SourceModule</span>  <div class="import">
-imports:
-    <a href="#oracledb">oracledb</a>
- &#8226;   <a href="#oracledb.base">oracledb.base</a>
- &#8226;   <a href="#oracledb.connection">oracledb.connection</a>
- &#8226;   <a href="#typing">typing</a>
-
-  </div>
-  <div class="import">
-imported by:
-    <a href="#oracledb">oracledb</a>
- &#8226;   <a href="#oracledb.connection">oracledb.connection</a>
-
-  </div>
-
-</div>
-
-<div class="node">
-  <a name="oracledb.thick_impl"></a>
-  <tt>oracledb.thick_impl</tt> <span class="moduletype"><tt>C:\Users\250327\PycharmProjects\factory_dashboard\.venv\Lib\site-packages\oracledb\thick_impl.cp311-win_amd64.pyd</tt></span>  <div class="import">
-imports:
-    <a href="#oracledb">oracledb</a>
-
-  </div>
-  <div class="import">
-imported by:
-    <a href="#oracledb">oracledb</a>
- &#8226;   <a href="#oracledb.connection">oracledb.connection</a>
- &#8226;   <a href="#oracledb.pool">oracledb.pool</a>
- &#8226;   <a href="#oracledb.utils">oracledb.utils</a>
-
-  </div>
-
-</div>
-
-<div class="node">
-  <a name="oracledb.thin_impl"></a>
-  <tt>oracledb.thin_impl</tt> <span class="moduletype"><tt>C:\Users\250327\PycharmProjects\factory_dashboard\.venv\Lib\site-packages\oracledb\thin_impl.cp311-win_amd64.pyd</tt></span>  <div class="import">
-imports:
-    <a href="#oracledb">oracledb</a>
-
-  </div>
-  <div class="import">
-imported by:
-    <a href="#oracledb">oracledb</a>
- &#8226;   <a href="#oracledb.connection">oracledb.connection</a>
- &#8226;   <a href="#oracledb.pool">oracledb.pool</a>
-
-  </div>
-
-</div>
-
-<div class="node">
-  <a name="oracledb.utils"></a>
-  <a target="code" href="///C:/Users/250327/PycharmProjects/factory_dashboard/.venv/Lib/site-packages/oracledb/utils.py" type="text/plain"><tt>oracledb.utils</tt></a>
-<span class="moduletype">SourceModule</span>  <div class="import">
-imports:
-    <a href="#functools">functools</a>
- &#8226;   <a href="#oracledb">oracledb</a>
- &#8226;   <a href="#oracledb.arrow_array">oracledb.arrow_array</a>
- &#8226;   <a href="#oracledb.base_impl">oracledb.base_impl</a>
- &#8226;   <a href="#oracledb.dataframe">oracledb.dataframe</a>
- &#8226;   <a href="#oracledb.driver_mode">oracledb.driver_mode</a>
- &#8226;   <a href="#oracledb.errors">oracledb.errors</a>
- &#8226;   <a href="#oracledb.thick_impl">oracledb.thick_impl</a>
- &#8226;   <a href="#typing">typing</a>
- &#8226;   <a href="#uuid">uuid</a>
-
-  </div>
-  <div class="import">
-imported by:
-    <a href="#oracledb">oracledb</a>
- &#8226;   <a href="#oracledb.builtin_hooks">oracledb.builtin_hooks</a>
- &#8226;   <a href="#oracledb.connect_params">oracledb.connect_params</a>
- &#8226;   <a href="#oracledb.connection">oracledb.connection</a>
- &#8226;   <a href="#oracledb.cursor">oracledb.cursor</a>
- &#8226;   <a href="#oracledb.pipeline">oracledb.pipeline</a>
- &#8226;   <a href="#oracledb.pool_params">oracledb.pool_params</a>
-
-  </div>
-
-</div>
-
-<div class="node">
-  <a name="oracledb.var"></a>
-  <a target="code" href="///C:/Users/250327/PycharmProjects/factory_dashboard/.venv/Lib/site-packages/oracledb/var.py" type="text/plain"><tt>oracledb.var</tt></a>
-<span class="moduletype">SourceModule</span>  <div class="import">
-imports:
-    <a href="#oracledb">oracledb</a>
- &#8226;   <a href="#oracledb.base">oracledb.base</a>
- &#8226;   <a href="#oracledb.base_impl">oracledb.base_impl</a>
- &#8226;   <a href="#oracledb.dbobject">oracledb.dbobject</a>
- &#8226;   <a href="#typing">typing</a>
-
-  </div>
-  <div class="import">
-imported by:
-    <a href="#oracledb">oracledb</a>
- &#8226;   <a href="#oracledb.cursor">oracledb.cursor</a>
-
-  </div>
-
-</div>
-
-<div class="node">
-  <a name="oracledb.version"></a>
-  <a target="code" href="///C:/Users/250327/PycharmProjects/factory_dashboard/.venv/Lib/site-packages/oracledb/version.py" type="text/plain"><tt>oracledb.version</tt></a>
-<span class="moduletype">SourceModule</span>  <div class="import">
-imports:
-    <a href="#oracledb">oracledb</a>
-
-  </div>
-  <div class="import">
-imported by:
-    <a href="#oracledb">oracledb</a>
-
-  </div>
-
-</div>
-
-<div class="node">
   <a name="org"></a>
   <a target="code" href="" type="text/plain"><tt>org</tt></a>
 <span class="moduletype">MissingModule</span>  <div class="import">
@@ -30078,7 +29360,6 @@ imported by:
  &#8226;   <a href="#numpy.testing._private.utils">numpy.testing._private.utils</a>
  &#8226;   <a href="#openpyxl.worksheet._writer">openpyxl.worksheet._writer</a>
  &#8226;   <a href="#openpyxl.xml">openpyxl.xml</a>
- &#8226;   <a href="#oracledb.builtin_hooks">oracledb.builtin_hooks</a>
  &#8226;   <a href="#os.path">os.path</a>
  &#8226;   <a href="#packaging._elffile">packaging._elffile</a>
  &#8226;   <a href="#packaging._manylinux">packaging._manylinux</a>
@@ -30792,6 +30073,8 @@ imports:
 imported by:
     <a href="#UTIL.db_handler">UTIL.db_handler</a>
  &#8226;   <a href="#UTIL.dfencoding">UTIL.dfencoding</a>
+ &#8226;   <a href="#dialog.DashboardLogDialog">dialog.DashboardLogDialog</a>
+ &#8226;   <a href="#logic.cal_values">logic.cal_values</a>
  &#8226;   <a href="#main.py">main.py</a>
  &#8226;   <a href="#pandas">pandas</a>
  &#8226;   <a href="#pandas._config">pandas._config</a>
@@ -44503,7 +43786,6 @@ imported by:
  &#8226;   <a href="#openpyxl.worksheet.print_settings">openpyxl.worksheet.print_settings</a>
  &#8226;   <a href="#openpyxl.writer.excel">openpyxl.writer.excel</a>
  &#8226;   <a href="#openpyxl.xml.functions">openpyxl.xml.functions</a>
- &#8226;   <a href="#oracledb.errors">oracledb.errors</a>
  &#8226;   <a href="#packaging._manylinux">packaging._manylinux</a>
  &#8226;   <a href="#packaging._musllinux">packaging._musllinux</a>
  &#8226;   <a href="#packaging._tokenizer">packaging._tokenizer</a>
@@ -62100,10 +61382,6 @@ imported by:
  &#8226;   <a href="#asyncio.sslproto">asyncio.sslproto</a>
  &#8226;   <a href="#ftplib">ftplib</a>
  &#8226;   <a href="#http.client">http.client</a>
- &#8226;   <a href="#oracledb.connect_params">oracledb.connect_params</a>
- &#8226;   <a href="#oracledb.connection">oracledb.connection</a>
- &#8226;   <a href="#oracledb.pool">oracledb.pool</a>
- &#8226;   <a href="#oracledb.pool_params">oracledb.pool_params</a>
  &#8226;   <a href="#setuptools.config._validate_pyproject.formats">setuptools.config._validate_pyproject.formats</a>
  &#8226;   <a href="#urllib.request">urllib.request</a>
 
@@ -62546,7 +61824,6 @@ imported by:
  &#8226;   <a href="#numpy.testing._private.extbuild">numpy.testing._private.extbuild</a>
  &#8226;   <a href="#numpy.testing._private.utils">numpy.testing._private.utils</a>
  &#8226;   <a href="#openpyxl.compat.strings">openpyxl.compat.strings</a>
- &#8226;   <a href="#oracledb">oracledb</a>
  &#8226;   <a href="#os">os</a>
  &#8226;   <a href="#packaging._manylinux">packaging._manylinux</a>
  &#8226;   <a href="#packaging._musllinux">packaging._musllinux</a>
@@ -63017,8 +62294,6 @@ imported by:
  &#8226;   <a href="#multiprocessing.synchronize">multiprocessing.synchronize</a>
  &#8226;   <a href="#multiprocessing.util">multiprocessing.util</a>
  &#8226;   <a href="#numpy.testing._private.utils">numpy.testing._private.utils</a>
- &#8226;   <a href="#oracledb.driver_mode">oracledb.driver_mode</a>
- &#8226;   <a href="#oracledb.pool">oracledb.pool</a>
  &#8226;   <a href="#pydoc">pydoc</a>
  &#8226;   <a href="#pytz.lazy">pytz.lazy</a>
  &#8226;   <a href="#queue">queue</a>
@@ -63623,22 +62898,6 @@ imported by:
  &#8226;   <a href="#numpy.linalg._linalg">numpy.linalg._linalg</a>
  &#8226;   <a href="#numpy.ma.core">numpy.ma.core</a>
  &#8226;   <a href="#numpy.polynomial._polybase">numpy.polynomial._polybase</a>
- &#8226;   <a href="#oracledb.aq">oracledb.aq</a>
- &#8226;   <a href="#oracledb.connect_params">oracledb.connect_params</a>
- &#8226;   <a href="#oracledb.connection">oracledb.connection</a>
- &#8226;   <a href="#oracledb.constructors">oracledb.constructors</a>
- &#8226;   <a href="#oracledb.cursor">oracledb.cursor</a>
- &#8226;   <a href="#oracledb.dbobject">oracledb.dbobject</a>
- &#8226;   <a href="#oracledb.fetch_info">oracledb.fetch_info</a>
- &#8226;   <a href="#oracledb.lob">oracledb.lob</a>
- &#8226;   <a href="#oracledb.pipeline">oracledb.pipeline</a>
- &#8226;   <a href="#oracledb.pool">oracledb.pool</a>
- &#8226;   <a href="#oracledb.pool_params">oracledb.pool_params</a>
- &#8226;   <a href="#oracledb.soda">oracledb.soda</a>
- &#8226;   <a href="#oracledb.sparse_vector">oracledb.sparse_vector</a>
- &#8226;   <a href="#oracledb.subscr">oracledb.subscr</a>
- &#8226;   <a href="#oracledb.utils">oracledb.utils</a>
- &#8226;   <a href="#oracledb.var">oracledb.var</a>
  &#8226;   <a href="#packaging._elffile">packaging._elffile</a>
  &#8226;   <a href="#packaging._manylinux">packaging._manylinux</a>
  &#8226;   <a href="#packaging._musllinux">packaging._musllinux</a>
@@ -64043,7 +63302,6 @@ imported by:
  &#8226;   <a href="#bs4.element">bs4.element</a>
  &#8226;   <a href="#bs4.formatter">bs4.formatter</a>
  &#8226;   <a href="#charset_normalizer.legacy">charset_normalizer.legacy</a>
- &#8226;   <a href="#oracledb.soda">oracledb.soda</a>
  &#8226;   <a href="#pandas._typing">pandas._typing</a>
  &#8226;   <a href="#pkg_resources">pkg_resources</a>
  &#8226;   <a href="#setuptools._distutils.cmd">setuptools._distutils.cmd</a>
@@ -64467,7 +63725,6 @@ imported by:
  &#8226;   <a href="#mimetypes">mimetypes</a>
  &#8226;   <a href="#nturl2path">nturl2path</a>
  &#8226;   <a href="#numpy.lib._datasource">numpy.lib._datasource</a>
- &#8226;   <a href="#oracledb.builtin_hooks">oracledb.builtin_hooks</a>
  &#8226;   <a href="#pandas.io.common">pandas.io.common</a>
  &#8226;   <a href="#pathlib">pathlib</a>
  &#8226;   <a href="#pydoc">pydoc</a>
@@ -64584,8 +63841,7 @@ imports:
   </div>
   <div class="import">
 imported by:
-    <a href="#oracledb.utils">oracledb.utils</a>
- &#8226;   <a href="#pandas._testing._io">pandas._testing._io</a>
+    <a href="#pandas._testing._io">pandas._testing._io</a>
  &#8226;   <a href="#pandas._testing.contexts">pandas._testing.contexts</a>
  &#8226;   <a href="#pandas.core.reshape.merge">pandas.core.reshape.merge</a>
  &#8226;   <a href="#pandas.io.formats.style_render">pandas.io.formats.style_render</a>
@@ -64747,8 +64003,6 @@ imported by:
  &#8226;   <a href="#openpyxl.worksheet.header_footer">openpyxl.worksheet.header_footer</a>
  &#8226;   <a href="#openpyxl.worksheet.worksheet">openpyxl.worksheet.worksheet</a>
  &#8226;   <a href="#openpyxl.xml">openpyxl.xml</a>
- &#8226;   <a href="#oracledb">oracledb</a>
- &#8226;   <a href="#oracledb.builtin_hooks">oracledb.builtin_hooks</a>
  &#8226;   <a href="#os">os</a>
  &#8226;   <a href="#packaging._manylinux">packaging._manylinux</a>
  &#8226;   <a href="#pandas">pandas</a>

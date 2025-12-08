@@ -12,24 +12,7 @@ from PyQt5.QtWidgets import (
 from UTIL.db_handler import getdb, runquery, closedb
 from UTIL.utils_qt import apply_table_style
 from dialog.MasterSearchDialog import MasterSearchDialog
-
-# 상품 리스트: (코드, 업체명)
-PRODUCT_LIST = [
-    ("511476", "코스온"),
-    ("511379", "코스온"),
-    ("511467", "코스온"),
-    ("511418", "이마트"),
-    ("502427", "이마트"),
-    ("502341", "이마트"),
-    ("520563", "이마트"),
-    ("520651", "이마트"),
-    ("520328", "이마트"),
-    ("520712", "이마트"),
-    ("520449", "홈플러스"),
-    ("511540", "마켓컬리"),
-    ("502415", "마켓컬리"),
-]
-VENDOR_CHOICES = ["코스온", "이마트", "홈플러스", "마켓컬리"]
+from config import PRODUCT_LIST, VENDOR_CHOICES
 
 class ProductListDialog(QDialog):
     """

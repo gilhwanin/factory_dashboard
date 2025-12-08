@@ -22,51 +22,21 @@ from UTIL.db_handler import getdb, runquery, closedb
 from ci_cd.updatedown import check_version_and_update
 from UTIL.util import fmt
 from logic.cal_values import *
+from config import PRODUCT_LIST, VENDOR_CHOICES
 
 from UI.dashboard import Ui_Form
 
 from dialog.DashboardLogDialog import DashboardLogDialog
 from dialog.ProductListDialog import ProductListDialog
+from dialog.ProductNameDialog import ProductNameDialog
 
-CURRENT_VERSION = "a-0010"
+CURRENT_VERSION = "a-0011"
 PROGRAM_NAME = "factory_dashboard"
 
 DB_NAME = "GP"
 CURRENT_LEVEL = 0   # 로그인 전 0
 CURRENT_USER = None  # 선택
 
-# 상품 리스트: (코드, 업체명)
-PRODUCT_LIST = [
-    ("511476", "코스온"), #코스온_돈육양념칼집구이(600g)(미국산)
-    ("511379", "코스온"), #코스온_돈육고추장불고기(2.4kg)
-    ("511467", "코스온"), #코스온_부채살양념칼집구이(600g*4)(미국산)
-
-    ("501998", "코스트코"), #냉장양념돼지갈비1.9KG
-    ("520033", "코스트코"), #호)냉장양념LA꽃갈비1.6kg_코스트코
-
-    ("520427", "코스트코"), #호)냉장양념소불고기1.6kg_코스트코
-    ("520261", "코스트코"), #냉장한우양념소불고기(코스트코)(자율중량)
-    ("520513", "코스트코"), #냉장1등급한우양념소불고기(코스트코)(자율중량)
-
-    ("511418", "이마트"), #이마트_고추장돼지주물럭(1kg)
-    ("502427", "이마트"), #이마트_간장돼지불고기(1kg)
-    ("502341", "이마트"), #이마트_양념안창살구이(0.8kg)210412(호주산)
-    ("502322", "이마트"), #이마트_양념소불고기(0.8kg)(호주산)
-    ("502811", "이마트"), #이마트_양념LA갈비(0.8kg)(미국산)
-    ("520642", "이마트"), #저당소불고기800g(이마트)
-    ("520563", "이마트"), #의성마늘황제갈비살구이700G(호주산)(이마트)
-    ("520651", "이마트"), #양념토시살구이800G(호주산)(이마트)
-    ("520328", "이마트"), #한우양념소불고기700g(이마트)
-    ("520712", "이마트"), #의성마늘황제갈비살구이700G(호주산)(이마트)
-
-    ("520449", "홈플러스"), #생생양념한우불고기600g(홈플러스)
-    ("502832", "홈플러스"), #홈플_호주청정우양념소불고기(800g)
-    ("520568", "홈플러스"), #호주산양념소불고기600g(홈플익스)
-
-    ("502415", "마켓컬리"), #마켓컬리_양념소불고기(1kg)KF365(미국산)
-    ("511540", "마켓컬리"), #마켓컬리 KF365양념소불고기 500g
-]
-VENDOR_CHOICES = ["코스온", "코스트코", "이마트", "홈플러스", "마켓컬리"]
 
 # ---------------------------------------------------------
 # 컬럼 인덱스
@@ -110,6 +80,10 @@ class OrderDashboardWidget(QWidget):
         self._sauce_table_item_changed_connected = False
         self._vege_table_item_changed_connected = False
 
+        # 🔹 품명 매핑 캐시
+        self.uname_map_cache = {}
+        self.refresh_uname_map_cache()
+
         # 테이블 스타일 적용
         self._setup_table_base(self.ui.tableWidget1)
         self._setup_table_base(self.ui.tableWidget2)
@@ -136,6 +110,7 @@ class OrderDashboardWidget(QWidget):
         self.ui.btn_excel.clicked.connect(self.on_click_export_excel)
         self.ui.btn_admin.clicked.connect(self.on_click_toggle_admin)
         self.ui.btn_complete.clicked.connect(self.on_click_complete_product)
+        self.ui.btn_custom.clicked.connect(self.on_click_custom)
 
         # 생산량(Prodcued) 실적 업데이트 버튼
         self.ui.btn_update_product.clicked.connect(self.on_click_update_product)
@@ -253,6 +228,33 @@ class OrderDashboardWidget(QWidget):
             self._load_raw_tab()
             self._load_sauce_tab()
             self._load_vege_tab()
+
+    def on_click_custom(self):
+        """품명 관리 다이얼로그 오픈"""
+        dlg = ProductNameDialog(self)
+        dlg.exec_()
+
+    def refresh_uname_map_cache(self):
+        """Dashboard_UNAME_MAP 테이블에서 매핑 정보 로드하여 캐시 갱신"""
+        self.uname_map_cache = {}
+        conn, cur = getdb(DB_NAME)
+        try:
+            # 테이블이 없을 수도 있으므로 try-except 처리
+            sql = "SELECT before_value, after_value FROM Dashboard_UNAME_MAP"
+            df = runquery(cur, sql)
+            if df is not None and not df.empty:
+                for _, row in df.iterrows():
+                    bf = str(row['before_value']).strip()
+                    af = str(row['after_value']).strip()
+                    self.uname_map_cache[bf] = af
+        except Exception as e:
+            print(f"매핑 캐시 로드 실패 (테이블이 없거나 오류): {e}")
+        finally:
+            closedb(conn)
+
+        # 캐시 갱신 후 테이블 리로드
+        if hasattr(self, 'ui'): # 초기화 중일 수 있음
+            self._load_product_tab()
 
 
     #3. 탭 / 날짜 이동
@@ -646,7 +648,10 @@ class OrderDashboardWidget(QWidget):
             co_val = str(row.CO).strip()  # 🔥 DB에서 가져온 CO
 
             rname = row.RNAME.strip() if row.RNAME else ""
-            uname = row.UNAME.strip() if row.UNAME else ""
+            uname_raw = row.UNAME.strip() if row.UNAME else ""
+            # 🔹 매핑 적용
+            uname = self.uname_map_cache.get(uname_raw, uname_raw)
+
             pkg = float(row.PKG)
             order_qty = int(row.ORDER_QTY)
             order_qty_after = int(row.ORDER_QTY_AFTER)
