@@ -118,7 +118,7 @@
           <number>0</number>
          </property>
          <item>
-          <widget class="QLabel" name="label">
+          <widget class="QLabel" name="label_retailer">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
              <horstretch>0</horstretch>
@@ -780,7 +780,7 @@ QPushButton:pressed {
              </widget>
             </item>
             <item>
-             <widget class="QLineEdit" name="lineEdit">
+             <widget class="QLineEdit" name="tab_frequency">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                 <horstretch>0</horstretch>
@@ -799,7 +799,7 @@ QPushButton:pressed {
           </widget>
          </item>
          <item>
-          <widget class="QPushButton" name="btn_prev_2">
+          <widget class="QPushButton" name="btn_autoPage">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
              <horstretch>0</horstretch>
@@ -813,7 +813,7 @@ QPushButton:pressed {
             </font>
            </property>
            <property name="text">
-            <string>자동전환</string>
+            <string>화면고정</string>
            </property>
           </widget>
          </item>

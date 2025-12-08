@@ -67,6 +67,9 @@ class OrderDashboardWidget(QWidget):
         # 🔹 제품 리스트 상태 (프로그램 실행 동안 유지)
         self.product_list = list(PRODUCT_LIST)
 
+        # 🔹 현재 선택된 업체 (기본값: 코스트코)
+        self.current_vendor = "코스트코"
+
         self._fullscreen_mode = False
         self.ui.control_frame.hide()
 
@@ -102,18 +105,22 @@ class OrderDashboardWidget(QWidget):
         self.ui.btn_sauce.clicked.connect(self.on_click_tab_sauce)
         self.ui.btn_vege.clicked.connect(self.on_click_tab_vege)
 
+        # 업체 필터 버튼 연결
+        self.ui.btn_costco.clicked.connect(self.on_click_filter_costco)
+        self.ui.btn_emart.clicked.connect(self.on_click_filter_emart)
+        self.ui.btn_homeplus.clicked.connect(self.on_click_filter_homeplus)
+        self.ui.btn_kurly.clicked.connect(self.on_click_filter_kurly)
+
         self.ui.btn_add.clicked.connect(self.on_click_add_dummy_rows)
         self.ui.btn_del.clicked.connect(self.on_click_delete_rows)
         self.ui.btn_del_row.clicked.connect(self.on_click_delete_selected_products)
         self.ui.btn_update.clicked.connect(self.on_click_update_order_qty_after)
+        self.ui.btn_update_product.clicked.connect(self.on_click_update_product)
         self.ui.btn_log.clicked.connect(self.on_click_show_log_dialog)
         self.ui.btn_excel.clicked.connect(self.on_click_export_excel)
         self.ui.btn_admin.clicked.connect(self.on_click_toggle_admin)
         self.ui.btn_complete.clicked.connect(self.on_click_complete_product)
         self.ui.btn_custom.clicked.connect(self.on_click_custom)
-
-        # 생산량(Prodcued) 실적 업데이트 버튼
-        self.ui.btn_update_product.clicked.connect(self.on_click_update_product)
 
         # 탭 전환
         self.ui.tabWidget.currentChanged.connect(self.on_tab_changed)
@@ -306,6 +313,27 @@ class OrderDashboardWidget(QWidget):
             self._load_sauce_tab()
         elif idx == 3:
             self._load_vege_tab()
+
+
+    # ---------------------------------------------------------
+    # 업체 필터링 (제품 탭)
+    # ---------------------------------------------------------
+    def _change_vendor_filter(self, vendor_name: str):
+        self.current_vendor = vendor_name
+        # 버튼 스타일 등 UI 업데이트가 필요하면 여기서 처리 가능
+        self._load_product_tab()
+
+    def on_click_filter_costco(self):
+        self._change_vendor_filter("코스트코")
+
+    def on_click_filter_emart(self):
+        self._change_vendor_filter("이마트")
+
+    def on_click_filter_homeplus(self):
+        self._change_vendor_filter("홈플러스")
+
+    def on_click_filter_kurly(self):
+        self._change_vendor_filter("마켓컬리")
 
 
     #4. 테이블 UI 설정 관련
@@ -609,6 +637,7 @@ class OrderDashboardWidget(QWidget):
         table = self.ui.tableWidget1
         qdate: QDate = self.ui.dateEdit.date()
         sdate_str = qdate.toString("yyyy-MM-dd")
+        self.ui.label_retailer.setText(self.current_vendor)
 
         # 🔹 업체명 → 품명 → PK 순 정렬
         conn, cur = getdb(DB_NAME)
@@ -622,9 +651,22 @@ class OrderDashboardWidget(QWidget):
                     work_status
                 FROM ORDER_DASHBOARD
                 WHERE CONVERT(DATE, sdate) = %s
-                ORDER BY PK
             """
-            df = runquery(cur, sql, [sdate_str])
+            
+            params = [sdate_str]
+
+            # 🔹 업체별 필터링
+            if self.current_vendor == "코스트코":
+                # 코스트코는 '코스트코' + '코스온' 포함
+                sql += " AND rname IN ('코스트코', '코스온')"
+            else:
+                # 그 외에는 정확히 일치하는 rname
+                sql += " AND rname = %s"
+                params.append(self.current_vendor)
+
+            sql += " ORDER BY PK"
+
+            df = runquery(cur, sql, params)
         finally:
             closedb(conn)
 
@@ -715,6 +757,7 @@ class OrderDashboardWidget(QWidget):
 
         table.blockSignals(False)
         self._apply_column_visibility_rules()
+
 
     def _load_raw_tab(self):
         table = self.ui.tableWidget2
@@ -2316,7 +2359,6 @@ class OrderDashboardWidget(QWidget):
 
         QMessageBox.information(self, "완료", "선택된 제품의 작업 상태가 '완료'로 변경되었습니다.")
 
-
     def on_click_export_excel(self):
         """
         tableWidget1~4 내용을 각각 시트로 생성하여 하나의 Excel 파일로 출력.
@@ -2457,3 +2499,5 @@ if __name__ == "__main__":
         print("\n===== 실행 중 오류 발생 =====")
         print(traceback.format_exc())
         input("\n엔터를 누르면 닫힙니다...")
+
+#갱!
