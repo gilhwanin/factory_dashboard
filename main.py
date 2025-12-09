@@ -1,8 +1,9 @@
 import sys
+from cProfile import label
 from datetime import datetime
 
 import pandas as pd
-from PyQt5.QtCore import Qt, QDate
+from PyQt5.QtCore import Qt, QDate, QTimer
 from PyQt5.QtWidgets import (
     QApplication,
     QWidget,
@@ -69,6 +70,7 @@ class OrderDashboardWidget(QWidget):
 
         # 🔹 현재 선택된 업체 (기본값: 코스트코)
         self.current_vendor = "코스트코"
+        self.ui.tab_frequency.setText("30")
 
         self._fullscreen_mode = False
         self.ui.control_frame.hide()
@@ -92,6 +94,25 @@ class OrderDashboardWidget(QWidget):
         self._setup_table_base(self.ui.tableWidget2)
         self._setup_table_base(self.ui.tableWidget3)
         self._setup_table_base(self.ui.tableWidget4)
+
+        # -----------------------------
+        # 🔹 타이머 설정 (화면 전환/갱신용)
+        # -----------------------------
+        self.is_auto_rotation = False  # True: 자동전환 모드, False: 화면고정 모드
+        self.vendors_rotation = ["코스트코", "이마트", "홈플러스", "마켓컬리"]
+        self.rotation_index = 0
+
+        self.timer_view = QTimer(self)
+        self.timer_view.timeout.connect(self._on_timer_tick)
+        # 기본 30초 시작
+        self.timer_view.start(1000 * 30)
+
+        # -----------------------------
+        # 🔹 30분 자동 갱신 타이머
+        # -----------------------------
+        self.timer_30min = QTimer(self)
+        self.timer_30min.timeout.connect(self._auto_update_every_30min)
+        self.timer_30min.start(1000 * 60 * 30)  # 30분 = 1800초
 
         # -----------------------------
         # 버튼 / 시그널 연결 (명시적)
@@ -122,6 +143,10 @@ class OrderDashboardWidget(QWidget):
         self.ui.btn_complete.clicked.connect(self.on_click_complete_product)
         self.ui.btn_custom.clicked.connect(self.on_click_custom)
 
+        # 🔹 화면 전환/고정 버튼 (autoPage)
+        self.ui.btn_autoPage.setText("화면고정")
+        self.ui.btn_autoPage.clicked.connect(self.on_click_toggle_mode)
+
         # 탭 전환
         self.ui.tabWidget.currentChanged.connect(self.on_tab_changed)
 
@@ -144,6 +169,7 @@ class OrderDashboardWidget(QWidget):
 
             # 🔵 control_frame 숨김
             self.ui.view_frame.hide()
+            self.ui.view_frame2.hide()
             self.ui.control_frame.hide()
 
         else:
@@ -152,6 +178,7 @@ class OrderDashboardWidget(QWidget):
 
             # 🔵 control_frame 다시 보이기
             self.ui.view_frame.show()
+            self.ui.view_frame2.show()
             if CURRENT_LEVEL >= 2:
                 self.ui.control_frame.show()
             else:
@@ -263,6 +290,14 @@ class OrderDashboardWidget(QWidget):
         if hasattr(self, 'ui'): # 초기화 중일 수 있음
             self._load_product_tab()
 
+    def logout_if_logged_in(self):
+        """이미 로그인 상태라면 on_click_toggle_admin()을 호출하여 로그아웃만 수행"""
+        global CURRENT_LEVEL
+
+        if CURRENT_LEVEL >= 1:
+            # on_click_toggle_admin 내부 로직에서 로그아웃 처리됨
+            self.on_click_toggle_admin()
+
 
     #3. 탭 / 날짜 이동
     def on_click_prev_date(self):
@@ -314,6 +349,75 @@ class OrderDashboardWidget(QWidget):
         elif idx == 3:
             self._load_vege_tab()
 
+
+    # ---------------------------------------------------------
+    # 🔹 타이머 & 화면 전환 로직
+    # ---------------------------------------------------------
+    def _get_frequency(self) -> int:
+        """UI tab_frequency 텍스트에서 초 단위 값 읽기. (최소 10초)"""
+        try:
+            text = self.ui.tab_frequency.text().strip()
+            if not text:
+                val = 30
+            else:
+                val = int(text)
+        except ValueError:
+            val = 30  # 기본값
+
+        if val < 5:
+            val = 5  # 최소값 강제 (요구사항 5초)
+        return val
+
+    def _on_timer_tick(self):
+        """화면 갱신 타이머"""
+        # 주기 동적 반영
+        freq_sec = self._get_frequency()
+        new_interval = freq_sec * 1000
+        if self.timer_view.interval() != new_interval:
+            self.timer_view.setInterval(new_interval)
+
+        if self.is_auto_rotation:
+            # [자동전환 모드]
+            self.rotation_index = (self.rotation_index + 1) % len(self.vendors_rotation)
+            next_vendor = self.vendors_rotation[self.rotation_index]
+            
+             # UI 상단 라벨에도 표시 (있으면)
+            self.ui.label_retailer.setText(next_vendor)
+
+            self._change_vendor_filter(next_vendor)
+        else:
+            # [화면고정 모드] : 현재 탭 리로드
+            # 제품 탭(0번)인 경우에만 load_product_tab 호출
+            idx = self.ui.tabWidget.currentIndex()
+            if idx == 0:
+                self._load_product_tab()
+            # 필요 시 다른 탭도 리로드 가능 (현재는 제품 탭 위주 요구사항)
+
+    def on_click_toggle_mode(self):
+        """화면고정 <-> 자동전환 토글"""
+        self.is_auto_rotation = not self.is_auto_rotation
+
+        if self.is_auto_rotation:
+            self.ui.btn_autoPage.setText("자동전환")
+            # 현재 업체의 인덱스 설정
+            try:
+                self.rotation_index = self.vendors_rotation.index(self.current_vendor)
+            except ValueError:
+                self.rotation_index = 0
+
+            # 🔥 토글되자마자 즉시 자동전환 1회 수행
+            self._on_timer_tick()
+
+        else:
+            self.ui.btn_autoPage.setText("화면고정")
+            # 🔥 화면고정도 즉시 현재 화면 리로드
+            self._on_timer_tick()
+
+    def _auto_update_every_30min(self):
+        """30분마다 자동 실행되는 두 함수"""
+        self.on_click_update_order_qty_after()
+        self.on_click_update_product()
+        self.logout_if_logged_in()
 
     # ---------------------------------------------------------
     # 업체 필터링 (제품 탭)
@@ -390,7 +494,7 @@ class OrderDashboardWidget(QWidget):
             if not item:
                 continue
 
-            elif col in (COL_CUR_PROD,):
+            elif col in (COL_FINAL_ORDER, COL_CUR_PROD):
                 item.setBackground(QBrush(header_live))
             else:
                 item.setBackground(QBrush(header_normal))
@@ -528,22 +632,18 @@ class OrderDashboardWidget(QWidget):
         else:
             alignment = Qt.AlignRight | Qt.AlignVCenter
 
-        # 밑줄 (발주량/최종발주량)
-        underline = col in (COL_ORDER, COL_FINAL_ORDER)
-
         # 🔸 컬럼 기준 “편집 대상 여부”만 결정
         editable_cols = {COL_PLAN, COL_TODAY_RES, COL_PREV_RES}
         editable = col in editable_cols
 
         # 글자 색상 (현재 생산량 등)
-        foreground = QColor("#0066cc") if col in (COL_CUR_PROD,) else None
+        foreground = QColor("#0066cc") if col in (COL_FINAL_ORDER, COL_CUR_PROD) else None
 
         return self._create_cell(
             text=text,
             pk=pk,
             alignment=alignment,
             editable=editable,  # 실제 편집 가능 여부는 _create_cell에서 LEVEL 체크
-            underline=underline,
             foreground=foreground,
         )
 
@@ -652,15 +752,13 @@ class OrderDashboardWidget(QWidget):
                 FROM ORDER_DASHBOARD
                 WHERE CONVERT(DATE, sdate) = %s
             """
-            
+
             params = [sdate_str]
 
             # 🔹 업체별 필터링
             if self.current_vendor == "코스트코":
-                # 코스트코는 '코스트코' + '코스온' 포함
                 sql += " AND rname IN ('코스트코', '코스온')"
             else:
-                # 그 외에는 정확히 일치하는 rname
                 sql += " AND rname = %s"
                 params.append(self.current_vendor)
 
@@ -687,11 +785,10 @@ class OrderDashboardWidget(QWidget):
 
         for row_idx, row in enumerate(df.itertuples(index=False)):
             pk = int(row.PK)
-            co_val = str(row.CO).strip()  # 🔥 DB에서 가져온 CO
+            co_val = str(row.CO).strip()
 
             rname = row.RNAME.strip() if row.RNAME else ""
             uname_raw = row.UNAME.strip() if row.UNAME else ""
-            # 🔹 매핑 적용
             uname = self.uname_map_cache.get(uname_raw, uname_raw)
 
             pkg = float(row.PKG)
@@ -705,18 +802,29 @@ class OrderDashboardWidget(QWidget):
             # 계산 필드
             diff = order_qty_after - order_qty
             diff_display = "" if diff == 0 else str(diff)
+
             production_qty = max(order_qty_after - prev_residue, 0)
             plan_qty = production_plan
             plan_kg = plan_qty * pkg
-            # 🔵 수율(trate) 계산
+
+            # 🔵 수율 계산
             if production_plan > 0:
                 trate_value = (order_qty_after - prev_residue + today_residue) * 100 / production_plan
                 trate_text = f"{trate_value:.2f}"
             else:
                 trate_text = "-"
 
-            # 🔵 작업상태 자동 계산
-            if plan_qty <= 0 :
+            # 🔵 수율 색상 조건
+            trate_color = None
+            try:
+                trate_int = int(float(trate_text))  # "94.23" → 94
+                if trate_int < 90 or trate_int >= 100:
+                    trate_color = QColor("#cc0000")  # 빨간색
+            except:
+                trate_color = None
+
+            # 작업상태 자동 계산
+            if plan_qty <= 0:
                 work_status = "-"
             elif produced_qty > order_qty_after:
                 work_status = "초과"
@@ -738,14 +846,18 @@ class OrderDashboardWidget(QWidget):
                 fmt(f"{plan_kg:.1f}"),
                 fmt(produced_qty),
                 fmt(today_residue),
-                trate_text,  # 14번: COL_TRATE
-                work_status  # 15번: COL_WORK_STATUS
+                trate_text,  # COL_TRATE
+                work_status  # COL_WORK_STATUS
             ]
 
-            # 🔥 테이블 셀 생성 + CO/UserRole 저장
             for col, text in enumerate(values):
                 item = self._create_product_item(text, pk, col)
-                item.setData(Qt.UserRole + 10, co_val)  # ← CO 저장 (표시는 안 함)
+                item.setData(Qt.UserRole + 10, co_val)
+
+                # 🔥 수율 컬럼 색상 적용
+                if col == COL_TRATE and trate_color:
+                    item.setForeground(QBrush(trate_color))
+
                 table.setItem(row_idx, col, item)
 
         table.verticalHeader().setDefaultSectionSize(46)
@@ -757,7 +869,6 @@ class OrderDashboardWidget(QWidget):
 
         table.blockSignals(False)
         self._apply_column_visibility_rules()
-
 
     def _load_raw_tab(self):
         table = self.ui.tableWidget2
@@ -1955,9 +2066,9 @@ class OrderDashboardWidget(QWidget):
 
     def on_click_delete_selected_products(self):
         """
-        제품 탭(tableWidget1)에서 선택한 제품만 삭제.
-        삭제 기준을 PK → UNAME(제품명)으로 변경.
-        ORDER_DASHBOARD에서 해당 날짜(sdate) 기준 같은 UNAME을 삭제.
+        제품 탭(tableWidget1)에서 선택한 제품만 삭제. (행 삭제)
+        UNAME(after_value)을 선택했을 경우,
+        GP..Dashboard_UNAME_MAP에서 before_value로 다시 매핑해 ORDER_DASHBOARD 삭제.
         """
         table = self.ui.tableWidget1
         selected_rows = sorted({idx.row() for idx in table.selectedIndexes()})
@@ -1966,52 +2077,82 @@ class OrderDashboardWidget(QWidget):
             QMessageBox.information(self, "안내", "삭제할 제품을 선택하세요.")
             return
 
-        # 🔥 UNAME은 1번 컬럼
-        UNAME_COL = 1
+        UNAME_COL = 1  # UNAME 컬럼
 
-        # 선택된 UNAME 목록
-        uname_list = []
+        # UI 선택된 after_value UNAME 리스트
+        uname_after_list = []
         for r in selected_rows:
             item = table.item(r, UNAME_COL)
             if item:
-                uname_list.append(item.text().strip())
+                uname_after_list.append(item.text().strip())
 
-        if not uname_list:
+        if not uname_after_list:
             QMessageBox.warning(self, "오류", "선택한 행에서 제품명(UNAME)을 찾을 수 없습니다.")
             return
 
-        # 중복제거
-        uname_list = list(set(uname_list))
+        uname_after_list = list(set(uname_after_list))
+
+        # ---------------------------------------------------------
+        # 🔥 Dashboard_UNAME_MAP 조회하여 after → before 매핑 적용
+        # ---------------------------------------------------------
+        uname_final_list = []  # 실제 삭제에 사용할 before_value list
+
+        conn, cur = getdb(DB_NAME)
+        try:
+            sql = "SELECT before_value, after_value FROM Dashboard_UNAME_MAP"
+            df_map = runquery(cur, sql)
+        finally:
+            closedb(conn)
+
+        mapping = {}
+        if df_map is not None and not df_map.empty:
+            for _, row in df_map.iterrows():
+                bf = str(row["before_value"]).strip()
+                af = str(row["after_value"]).strip()
+                mapping[af] = bf  # after → before 저장
+
+        # after_value → before_value 변환
+        for af in uname_after_list:
+            if af in mapping:
+                uname_final_list.append(mapping[af])
+            else:
+                uname_final_list.append(af)
+
+        # 중복 제거
+        uname_final_list = list(set(uname_final_list))
 
         reply = QMessageBox.question(
             self,
             "삭제 확인",
-            f"선택한 {len(uname_list)}개의 제품을 삭제하시겠습니까?\n"
+            f"선택한 {len(uname_after_list)}개의 제품을 삭제하시겠습니까?\n"
             f"(ORDER_DASHBOARD 삭제 + RAW/SAUCE/VEGE 재집계)",
             QMessageBox.Yes | QMessageBox.No
         )
         if reply != QMessageBox.Yes:
             return
 
-        # 현재 날짜
+        # ---------------------------------------------------------
+        # 🔥 ORDER_DASHBOARD: 매핑된 before_value 기준으로 삭제
+        # ---------------------------------------------------------
         qdate = self.ui.dateEdit.date()
         sdate_str = qdate.toString("yyyy-MM-dd")
 
-        # 🔥 ORDER_DASHBOARD 삭제 (UNAME 기준)
         conn, cur = getdb(DB_NAME)
         try:
-            placeholders = ", ".join(["%s"] * len(uname_list))
+            placeholders = ", ".join(["%s"] * len(uname_final_list))
             sql = f"""
                 DELETE FROM ORDER_DASHBOARD
                 WHERE CONVERT(DATE, sdate) = %s
                   AND UNAME IN ({placeholders})
             """
-            params = [sdate_str] + uname_list
+            params = [sdate_str] + uname_final_list
             runquery(cur, sql, params)
         finally:
             closedb(conn)
 
-        # 🔁 RAW/SAUCE/VEGE 재집계
+        # ---------------------------------------------------------
+        # 🔁 RAW / SAUCE / VEGE 재집계
+        # ---------------------------------------------------------
         try:
             recalc_dashboard_raw_keep_manual(sdate_str)
             recalc_dashboard_sauce_keep_manual(sdate_str)
@@ -2022,7 +2163,6 @@ class OrderDashboardWidget(QWidget):
 
         QMessageBox.information(self, "완료", "선택한 제품이 삭제되었으며 재집계가 완료되었습니다.")
 
-        # 새로고침
         self._load_product_tab()
 
     def on_click_delete_rows(self):
@@ -2499,5 +2639,3 @@ if __name__ == "__main__":
         print("\n===== 실행 중 오류 발생 =====")
         print(traceback.format_exc())
         input("\n엔터를 누르면 닫힙니다...")
-
-#갱!

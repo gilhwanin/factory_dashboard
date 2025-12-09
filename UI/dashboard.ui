@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1506</width>
-    <height>879</height>
+    <height>880</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -311,7 +311,7 @@
     </widget>
    </item>
    <item>
-    <widget class="QFrame" name="frame_3">
+    <widget class="QFrame" name="view_frame2">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
        <horstretch>0</horstretch>
@@ -696,6 +696,12 @@ QPushButton:pressed {
      <layout class="QHBoxLayout" name="horizontalLayout_6">
       <item>
        <widget class="QFrame" name="frame_6">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <property name="frameShape">
          <enum>QFrame::StyledPanel</enum>
         </property>
@@ -720,6 +726,12 @@ QPushButton:pressed {
          </property>
          <item>
           <widget class="QFrame" name="frame_7">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="frameShape">
             <enum>QFrame::StyledPanel</enum>
            </property>
@@ -745,7 +757,7 @@ QPushButton:pressed {
             <item>
              <widget class="QLabel" name="label_3">
               <property name="sizePolicy">
-               <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+               <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
                 <horstretch>0</horstretch>
                 <verstretch>0</verstretch>
                </sizepolicy>
@@ -758,7 +770,7 @@ QPushButton:pressed {
               </property>
               <property name="maximumSize">
                <size>
-                <width>48</width>
+                <width>16777215</width>
                 <height>16777215</height>
                </size>
               </property>
@@ -772,10 +784,10 @@ QPushButton:pressed {
                </font>
               </property>
               <property name="text">
-               <string>전환주기</string>
+               <string>화면전환 주기</string>
               </property>
               <property name="alignment">
-               <set>Qt::AlignBottom|Qt::AlignHCenter</set>
+               <set>Qt::AlignBottom|Qt::AlignLeading|Qt::AlignLeft</set>
               </property>
              </widget>
             </item>
@@ -801,7 +813,7 @@ QPushButton:pressed {
          <item>
           <widget class="QPushButton" name="btn_autoPage">
            <property name="sizePolicy">
-            <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
+            <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
@@ -823,7 +835,7 @@ QPushButton:pressed {
       <item>
        <widget class="QPushButton" name="btn_prev_3">
         <property name="sizePolicy">
-         <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
+         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
           <horstretch>0</horstretch>
           <verstretch>0</verstretch>
          </sizepolicy>
@@ -842,7 +854,7 @@ QPushButton:pressed {
       <item>
        <widget class="QPushButton" name="btn_product">
         <property name="sizePolicy">
-         <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
           <horstretch>0</horstretch>
           <verstretch>0</verstretch>
          </sizepolicy>
@@ -876,7 +888,7 @@ QPushButton:pressed {
       <item>
        <widget class="QPushButton" name="btn_raw">
         <property name="sizePolicy">
-         <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
           <horstretch>0</horstretch>
           <verstretch>0</verstretch>
          </sizepolicy>
@@ -911,7 +923,7 @@ QPushButton:pressed {
       <item>
        <widget class="QPushButton" name="btn_sauce">
         <property name="sizePolicy">
-         <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
           <horstretch>0</horstretch>
           <verstretch>0</verstretch>
          </sizepolicy>
@@ -946,7 +958,7 @@ QPushButton:pressed {
       <item>
        <widget class="QPushButton" name="btn_vege">
         <property name="sizePolicy">
-         <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
           <horstretch>0</horstretch>
           <verstretch>0</verstretch>
          </sizepolicy>
