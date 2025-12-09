@@ -74,6 +74,7 @@ class OrderDashboardWidget(QWidget):
 
         self._fullscreen_mode = False
         self.ui.control_frame.hide()
+        self.show_hidden = False  # 숨김보기 모드 OFF
 
         # 날짜 설정
         self.ui.dateEdit.setDate(QDate.currentDate())
@@ -143,6 +144,9 @@ class OrderDashboardWidget(QWidget):
         self.ui.btn_complete.clicked.connect(self.on_click_complete_product)
         self.ui.btn_custom.clicked.connect(self.on_click_custom)
 
+        self.ui.btn_hide_row.clicked.connect(self.on_click_hide_row)
+        self.ui.btn_show_hide.clicked.connect(self.on_click_toggle_show_hide)
+
         # 🔹 화면 전환/고정 버튼 (autoPage)
         self.ui.btn_autoPage.setText("화면고정")
         self.ui.btn_autoPage.clicked.connect(self.on_click_toggle_mode)
@@ -151,7 +155,6 @@ class OrderDashboardWidget(QWidget):
         self.ui.tabWidget.currentChanged.connect(self.on_tab_changed)
 
         # 날짜 변경 이벤트
-        # dateEdit 은 QDateEdit 로 고정되어 있으니 조건 제거
         self.ui.dateEdit.dateChanged.connect(self.on_date_changed)
 
         # 최초 로딩
@@ -298,6 +301,60 @@ class OrderDashboardWidget(QWidget):
             # on_click_toggle_admin 내부 로직에서 로그아웃 처리됨
             self.on_click_toggle_admin()
 
+    def on_click_hide_row(self):
+        """선택된 제품행의 hide 필드를 0/1 토글한다. (NULL → 1)"""
+        table = self.ui.tableWidget1
+        selected_rows = sorted({idx.row() for idx in table.selectedIndexes()})
+
+        if not selected_rows:
+            QMessageBox.information(self, "안내", "숨김 처리할 제품을 선택하세요.")
+            return
+
+        conn, cur = getdb(DB_NAME)
+
+        try:
+            for row in selected_rows:
+                item = table.item(row, 0)
+                if not item:
+                    continue
+
+                pk = item.data(Qt.UserRole)
+                if not pk:
+                    continue
+
+                # 현재 hide 값 조회
+                df = runquery(cur, "SELECT hide FROM ORDER_DASHBOARD WHERE PK = %s", [pk])
+                if df is None or df.empty:
+                    continue
+
+                cur_val = df.iloc[0]["hide"]
+                if cur_val is None:
+                    new_val = 1
+                else:
+                    new_val = 0 if int(cur_val) == 1 else 1
+
+                # UPDATE
+                runquery(cur, "UPDATE ORDER_DASHBOARD SET hide = %s WHERE PK = %s", [new_val, pk])
+
+            QMessageBox.information(self, "완료", "선택한 제품의 hide 값이 변경되었습니다.")
+
+        finally:
+            closedb(conn)
+
+        # UI 즉시 갱신
+        self._load_product_tab()
+
+    def on_click_toggle_show_hide(self):
+        """숨김보기 모드를 토글한다."""
+        self.show_hidden = not self.show_hidden
+
+        if self.show_hidden:
+            self.ui.btn_show_hide.setText("숨김포함")
+        else:
+            self.ui.btn_show_hide.setText("숨김제외")
+
+        # 화면 즉시 갱신
+        self._load_product_tab()
 
     #3. 탭 / 날짜 이동
     def on_click_prev_date(self):
@@ -754,6 +811,9 @@ class OrderDashboardWidget(QWidget):
             """
 
             params = [sdate_str]
+
+            if not self.show_hidden:
+                sql += " AND (hide = 0 OR hide IS NULL)"
 
             # 🔹 업체별 필터링
             if self.current_vendor == "코스트코":
@@ -1421,8 +1481,34 @@ class OrderDashboardWidget(QWidget):
 
         conn, cur = getdb(DB_NAME)
         try:
+            # 📝 로그용: 변경 전 값 조회
+            old_val = 0
+            try:
+                df_old = runquery(cur, f"SELECT {field_name} FROM ORDER_DASHBOARD WHERE PK = %s", [pk])
+                if df_old is not None and not df_old.empty:
+                    old_val = int(df_old.iloc[0][0] or 0)
+            except:
+                pass
+
             sql = f"UPDATE ORDER_DASHBOARD SET {field_name} = %s WHERE PK = %s"
             runquery(cur, sql, [new_val, pk])
+
+            # 📝 로그 기록
+            if old_val != new_val:
+                row = item.row()
+                u_item = self.ui.tableWidget1.item(row, COL_PRODUCT)
+                uname = u_item.text() if u_item else "-"
+                
+                label_map = {
+                    "production_plan": "생산계획",
+                    "today_residue": "당일잔피",
+                    "prev_residue": "전일잔피"
+                }
+                lbl = label_map.get(field_name, field_name)
+                content = f"{lbl} {old_val} -> {new_val}"
+                
+                DashboardLogDialog.log_change(CURRENT_USER, self.ui.dateEdit.date(), uname, content, "")
+
         finally:
             closedb(conn)
 
@@ -1455,6 +1541,18 @@ class OrderDashboardWidget(QWidget):
 
         conn, cur = getdb(DB_NAME)
         try:
+            # 📝 로그용: 변경 전 값 조회
+            old_vals = {} # stock, prepro, ipgo
+            try:
+                df_old = runquery(cur, "SELECT stock, prepro_qty, ipgo_qty FROM DASHBOARD_RAW WHERE PK = %s", [pk])
+                if df_old is not None and not df_old.empty:
+                    # 인덱스 주의: stock(0), prepro(1), ipgo(2)
+                    old_vals["stock"] = int(df_old.iloc[0][0] or 0)
+                    old_vals["prepro_qty"] = int(df_old.iloc[0][1] or 0)
+                    old_vals["ipgo_qty"] = int(df_old.iloc[0][2] or 0)
+            except:
+                pass
+
             sql = """
                         UPDATE DASHBOARD_RAW
                         SET stock = %s,
@@ -1463,6 +1561,23 @@ class OrderDashboardWidget(QWidget):
                         WHERE PK = %s
                     """
             runquery(cur, sql, [stock, prepro, incoming, pk])
+
+            # 📝 로그 기록
+            # 변경된 컬럼만 찾기
+            changed_content = []
+            if old_vals.get("stock", -999) != stock:
+                changed_content.append(f"재고 {old_vals.get('stock')}->{stock}")
+            if old_vals.get("prepro_qty", -999) != prepro:
+                changed_content.append(f"선생산 {old_vals.get('prepro_qty')}->{prepro}")
+            if old_vals.get("ipgo_qty", -999) != incoming:
+                changed_content.append(f"입고 {old_vals.get('ipgo_qty')}->{incoming}")
+            
+            if changed_content:
+                u_item = table.item(row, 0)
+                uname = u_item.text() if u_item else "-"
+                content = ", ".join(changed_content)
+                DashboardLogDialog.log_change(CURRENT_USER, self.ui.dateEdit.date(), uname, content, "")
+
         finally:
             closedb(conn)
 
@@ -1495,6 +1610,17 @@ class OrderDashboardWidget(QWidget):
 
         conn, cur = getdb(DB_NAME)
         try:
+            # 📝 로그용: 변경 전 값 조회
+            old_vals = {}
+            try:
+                df_old = runquery(cur, "SELECT stock, prepro_qty, ipgo_qty FROM DASHBOARD_SAUCE WHERE PK = %s", [pk])
+                if df_old is not None and not df_old.empty:
+                    old_vals["stock"] = int(df_old.iloc[0][0] or 0)
+                    old_vals["prepro_qty"] = int(df_old.iloc[0][1] or 0)
+                    old_vals["ipgo_qty"] = int(df_old.iloc[0][2] or 0)
+            except:
+                pass
+
             sql = """
                 UPDATE DASHBOARD_SAUCE
                 SET stock = %s,
@@ -1503,6 +1629,22 @@ class OrderDashboardWidget(QWidget):
                 WHERE PK = %s
             """
             runquery(cur, sql, [stock, prepro, incoming, pk])
+
+            # 📝 로그 기록
+            changed_content = []
+            if old_vals.get("stock", -999) != stock:
+                changed_content.append(f"재고 {old_vals.get('stock')}->{stock}")
+            if old_vals.get("prepro_qty", -999) != prepro:
+                changed_content.append(f"선생산 {old_vals.get('prepro_qty')}->{prepro}")
+            if old_vals.get("ipgo_qty", -999) != incoming:
+                changed_content.append(f"입고 {old_vals.get('ipgo_qty')}->{incoming}")
+            
+            if changed_content:
+                u_item = table.item(row, 0)
+                uname = u_item.text() if u_item else "-"
+                content = ", ".join(changed_content)
+                DashboardLogDialog.log_change(CURRENT_USER, self.ui.dateEdit.date(), uname, content, "")
+
         finally:
             closedb(conn)
 
@@ -1535,6 +1677,17 @@ class OrderDashboardWidget(QWidget):
 
         conn, cur = getdb(DB_NAME)
         try:
+            # 📝 로그용: 변경 전 값 조회
+            old_vals = {}
+            try:
+                df_old = runquery(cur, "SELECT stock, prepro_qty, ipgo_qty FROM DASHBOARD_VEGE WHERE PK = %s", [pk])
+                if df_old is not None and not df_old.empty:
+                    old_vals["stock"] = int(df_old.iloc[0][0] or 0)
+                    old_vals["prepro_qty"] = int(df_old.iloc[0][1] or 0)
+                    old_vals["ipgo_qty"] = int(df_old.iloc[0][2] or 0)
+            except:
+                pass
+
             sql = """
                 UPDATE DASHBOARD_VEGE
                 SET stock = %s,
@@ -1543,6 +1696,22 @@ class OrderDashboardWidget(QWidget):
                 WHERE PK = %s
             """
             runquery(cur, sql, [stock, prepro, incoming, pk])
+
+            # 📝 로그 기록
+            changed_content = []
+            if old_vals.get("stock", -999) != stock:
+                changed_content.append(f"재고 {old_vals.get('stock')}->{stock}")
+            if old_vals.get("prepro_qty", -999) != prepro:
+                changed_content.append(f"선생산 {old_vals.get('prepro_qty')}->{prepro}")
+            if old_vals.get("ipgo_qty", -999) != incoming:
+                changed_content.append(f"입고 {old_vals.get('ipgo_qty')}->{incoming}")
+            
+            if changed_content:
+                u_item = table.item(row, 0)
+                uname = u_item.text() if u_item else "-"
+                content = ", ".join(changed_content)
+                DashboardLogDialog.log_change(CURRENT_USER, self.ui.dateEdit.date(), uname, content, "")
+
         finally:
             closedb(conn)
 
@@ -1962,6 +2131,8 @@ class OrderDashboardWidget(QWidget):
                 "완료",
                 f"제품 {len(rows)}행, 원료/소스/야채 대시보드 재생성 완료."
             )
+            # 📝 로그 기록
+            DashboardLogDialog.log_action(CURRENT_USER, self.ui.dateEdit.date(), f"표 생성(dummy rows) {len(rows)}행")
             if hasattr(self.ui, "tabWidget") and self.ui.tabWidget.currentIndex() == 0:
                 self._load_product_tab()
 
@@ -2162,6 +2333,9 @@ class OrderDashboardWidget(QWidget):
             return
 
         QMessageBox.information(self, "완료", "선택한 제품이 삭제되었으며 재집계가 완료되었습니다.")
+        
+        # 📝 로그 기록
+        DashboardLogDialog.log_action(CURRENT_USER, self.ui.dateEdit.date(), f"선택 행 삭제 ({len(uname_final_list)}건)")
 
         self._load_product_tab()
 
@@ -2194,6 +2368,9 @@ class OrderDashboardWidget(QWidget):
             closedb(conn)
 
         QMessageBox.information(self, "완료", f"{sdate_str} 자료 삭제 완료!")
+
+        # 📝 로그 기록
+        DashboardLogDialog.log_action(CURRENT_USER, qdate, f"표 삭제 ({sdate_str})")
 
         # UI 초기화
         self.ui.tableWidget1.setRowCount(0)
@@ -2313,39 +2490,6 @@ class OrderDashboardWidget(QWidget):
             QMessageBox.critical(self, "예외 발생", f"생산량 갱신 중 예외가 발생했습니다.\n{e}")
 
     # -----------------------------------------------------
-    # DASHBOARD_LOG INSERT
-    # -----------------------------------------------------
-    def _insert_dashboard_log(
-        self,
-        cur,
-        sdate_str: str,
-        co: str,
-        vendor: str,
-        qty_before: int,
-        qty_after: int,
-    ):
-        """
-        DASHBOARD_LOG에 변경 이력 기록.
-        """
-        now = datetime.now()
-        sql = """
-            INSERT INTO DASHBOARD_LOG (
-                update_time, id, sdate, co, vendor, qty_before, qty_after
-            )
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
-        """
-        params = [
-            now,
-            "인길환",
-            sdate_str,
-            co,
-            vendor,
-            qty_before,
-            qty_after,
-        ]
-        runquery(cur, sql, params)
-
-    # -----------------------------------------------------
     # 발주량 재계산 & UPDATE
     # -----------------------------------------------------
     def on_click_update_order_qty_after(self):
@@ -2414,16 +2558,9 @@ class OrderDashboardWidget(QWidget):
                 )
 
                 # ─────────────────────────────────────────────
-                # 4) 로그 INSERT
+                # 4) 로그 INSERT (제외됨)
                 # ─────────────────────────────────────────────
-                self._insert_dashboard_log(
-                    cur,
-                    sdate_str=sdate_str,
-                    co=base_co,
-                    vendor=vendor,
-                    qty_before=qty_before,
-                    qty_after=new_qty_packs,
-                )
+                # self._insert_dashboard_log(...)
 
         finally:
             closedb(conn)
@@ -2501,9 +2638,8 @@ class OrderDashboardWidget(QWidget):
 
     def on_click_export_excel(self):
         """
-        tableWidget1~4 내용을 각각 시트로 생성하여 하나의 Excel 파일로 출력.
-        시트명: 제품 / 원료 / 소스 / 야채
-        동일한 서식 적용.
+        제품 탭(tableWidget1)을 업체별로 다시 조회한 뒤,
+        각 업체별로 각각 다른 시트를 생성하는 방식으로 엑셀 출력.
         """
         import pandas as pd
         from datetime import datetime
@@ -2511,79 +2647,79 @@ class OrderDashboardWidget(QWidget):
         from openpyxl.utils import get_column_letter
         from openpyxl.styles import Font, Alignment, Border, Side
 
-        self._load_product_tab()
-        self._load_raw_tab()
-        self._load_sauce_tab()
-        self._load_vege_tab()
+        # 업체별 버튼 매핑
+        vendor_buttons = {
+            "코스트코": self.on_click_filter_costco,
+            "이마트": self.on_click_filter_emart,
+            "홈플러스": self.on_click_filter_homeplus,
+            "마켓컬리": self.on_click_filter_kurly,
+        }
 
-        # ⬇️ 시트 이름과 tableWidget 매핑
-        sheet_map = [
-            ("제품", self.ui.tableWidget1),
-            ("원료", self.ui.tableWidget2),
-            ("소스", self.ui.tableWidget3),
-            ("야채", self.ui.tableWidget4),
-        ]
+        vendors = list(vendor_buttons.keys())
 
-        # 데이터 있는 테이블이 하나라도 있는지 확인
-        has_data = any(t.rowCount() > 0 and t.columnCount() > 0 for _, t in sheet_map)
-        if not has_data:
-            QMessageBox.information(self, "안내", "엑셀로 내보낼 데이터가 없습니다.")
-            return
-
-        # 저장 파일명 기본값
+        # 파일 저장 경로 준비
         today_str = datetime.now().strftime("%Y%m%d_%H%M")
-        default_name = f"발주현황_{today_str}.xlsx"
+        default_name = f"제품현황_업체별_{today_str}.xlsx"
 
         desktop = os.path.join(os.path.expanduser("~"), "Desktop")
         default_path = os.path.join(desktop, default_name)
 
         path, _ = QFileDialog.getSaveFileName(
             self,
-            "전체 발주현황 엑셀 저장",
+            "업체별 제품현황 엑셀 저장",
             default_path,
             "Excel Files (*.xlsx);;All Files (*)",
         )
         if not path:
             return
-
         if not path.lower().endswith(".xlsx"):
             path += ".xlsx"
 
-        # ---------------------------------------
-        # 파일 생성
-        # ---------------------------------------
+        # -------------------------------------------------------
+        # 엑셀 생성
+        # -------------------------------------------------------
         try:
             with pd.ExcelWriter(path, engine="openpyxl") as writer:
 
-                for sheet_name, table in sheet_map:
-                    row_count = table.rowCount()
-                    col_count = table.columnCount()
+                for vendor in vendors:
 
-                    if row_count == 0 or col_count == 0:
-                        continue  # 데이터 없으면 스킵
+                    # ------------------------------------------
+                    # 🔹 1) 해당 업체 버튼 클릭 → tableWidget1 갱신
+                    # ------------------------------------------
+                    vendor_buttons[vendor]()  # ← 업체 필터링 로직 실행됨
 
-                    # 1) 헤더 추출
+                    table = self.ui.tableWidget1
+
+                    # 데이터 없으면 건너뛰기
+                    if table.rowCount() == 0:
+                        continue
+
+                    # ------------------------------------------
+                    # 🔹 2) tableWidget1 → DataFrame 변환
+                    # ------------------------------------------
                     headers = []
-                    for c in range(col_count):
-                        header_item = table.horizontalHeaderItem(c)
-                        headers.append(header_item.text() if header_item else f"열{c + 1}")
+                    for c in range(table.columnCount()):
+                        item = table.horizontalHeaderItem(c)
+                        headers.append(item.text() if item else f"열{c + 1}")
 
-                    # 2) 데이터 추출
-                    data = []
-                    for r in range(row_count):
+                    rows = []
+                    for r in range(table.rowCount()):
                         row_vals = []
-                        for c in range(col_count):
+                        for c in range(table.columnCount()):
                             item = table.item(r, c)
                             row_vals.append(item.text() if item else "")
-                        data.append(row_vals)
+                        rows.append(row_vals)
 
-                    # 3) DataFrame → Excel 저장
-                    df = pd.DataFrame(data, columns=headers)
-                    df.to_excel(writer, sheet_name=sheet_name, index=False)
+                    df = pd.DataFrame(rows, columns=headers)
 
-                    # 4) 스타일 적용
+                    # ------------------------------------------
+                    # 🔹 3) 해당 업체 시트에 기록
+                    # ------------------------------------------
+                    df.to_excel(writer, sheet_name=vendor, index=False)
+
+                    # Excel 스타일
                     wb = writer.book
-                    ws = wb[sheet_name]
+                    ws = wb[vendor]
 
                     header_font = Font(bold=True)
                     header_align = Alignment(horizontal="center", vertical="center")
@@ -2592,7 +2728,7 @@ class OrderDashboardWidget(QWidget):
                     thin = Side(border_style="thin", color="000000")
                     border = Border(left=thin, right=thin, top=thin, bottom=thin)
 
-                    # (A) 헤더 스타일 + 열 너비 자동
+                    # (A) 헤더 스타일 + 자동 열 너비
                     for col_idx, col_name in enumerate(headers, start=1):
                         cell = ws.cell(row=1, column=col_idx)
                         cell.font = header_font
@@ -2605,12 +2741,12 @@ class OrderDashboardWidget(QWidget):
                             max_len = max(max_len, col_series.map(len).max())
                         ws.column_dimensions[get_column_letter(col_idx)].width = max_len + 2
 
-                    # (B) 데이터 스타일 (1,2번 열은 왼쪽 / 나머지는 오른쪽)
+                    # (B) 본문 스타일
                     for row_idx in range(2, ws.max_row + 1):
                         for col_idx in range(1, ws.max_column + 1):
                             cell = ws.cell(row=row_idx, column=col_idx)
                             cell.border = border
-                            if col_idx in (1, 2):
+                            if col_idx in (1, 2):  # 업체명 / 제품명 왼쪽 정렬
                                 cell.alignment = left_align
                             else:
                                 cell.alignment = right_align
@@ -2620,7 +2756,7 @@ class OrderDashboardWidget(QWidget):
         except Exception as e:
             import traceback
             traceback.print_exc()
-            QMessageBox.critical(self, "오류", f"엑셀 저장 중 오류가 발생했습니다.\n{e}")
+            QMessageBox.critical(self, "오류", f"엑셀 저장 중 오류 발생\n{e}")
 
 
 # ---------------------------------------------------------

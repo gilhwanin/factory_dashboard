@@ -20,11 +20,12 @@ from UTIL.db_handler import getdb, closedb, runquery
 class DashboardLogDialog(QDialog):
     """
     GP..DASHBOARD_LOG를 날짜별로 조회하는 팝업 (UTIL.db_handler 기반)
+    로그 기록(INSERT) 기능도 포함.
     """
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("발주 로그 조회")
-        self.resize(900, 500)
+        self.resize(1000, 600)
 
         # -------------------------------
         # 레이아웃 구성
@@ -47,7 +48,8 @@ class DashboardLogDialog(QDialog):
 
         # 중앙 테이블
         self.table = QTableWidget(self)
-        headers = ["PK", "변경시각", "ID", "날짜", "CO", "업체", "변경전 → 변경후"]
+        # 스키마: PK, modified_time, user_id, sdate, uname, content, bigo
+        headers = ["변경시각", "품명", "내용", "ID"]
         self.table.setColumnCount(len(headers))
         self.table.setHorizontalHeaderLabels(headers)
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
@@ -70,7 +72,7 @@ class DashboardLogDialog(QDialog):
         self.load_logs()
 
     # ------------------------------------------------------
-    # 로그 조회 함수 (UTIL.db_handler 기반)
+    # 로그 조회 함수
     # ------------------------------------------------------
     @staticmethod
     def _to_datetime_str(val):
@@ -86,16 +88,15 @@ class DashboardLogDialog(QDialog):
             sql = """
                 SELECT 
                     PK, 
-                    update_time, 
-                    id, 
+                    modified_time, 
+                    user_id, 
                     sdate, 
-                    co, 
-                    vendor, 
-                    qty_before, 
-                    qty_after
-                FROM DASHBOARD_LOG
+                    uname, 
+                    content, 
+                    bigo
+                FROM DASHBOARD_LOGS
                 WHERE CONVERT(DATE, sdate) = %s
-                ORDER BY update_time DESC, PK DESC
+                ORDER BY modified_time DESC, PK DESC
             """
             df = runquery(cur, sql, [sdate_str])
         except Exception as e:
@@ -118,40 +119,67 @@ class DashboardLogDialog(QDialog):
         # 테이블에 데이터 채우기
         for row_idx, row in enumerate(df.itertuples(index=False)):
             pk = str(row.PK)
-            update_time = row.UPDATE_TIME
-            log_id = str(row.ID)
+            modified_time = row.MODIFIED_TIME
+            user_id = str(row.USER_ID)
             sdate = row.SDATE
-            co = str(row.CO)
-            vendor = str(row.VENDOR)
-            before = int(row.QTY_BEFORE or 0)
-            after = int(row.QTY_AFTER or 0)
-            diff = after - before
+            uname = str(row.UNAME) if row.UNAME else ""
+            content = str(row.CONTENT) if row.CONTENT else ""
 
             # 날짜/시간 포맷
-            update_time_str = self._to_datetime_str(update_time)
-            sdate_str2 = self._to_datetime_str(sdate)
-
+            mod_time_str = self._to_datetime_str(modified_time)
+            
             if hasattr(sdate, "strftime"):
                 sdate_str2 = sdate.strftime("%Y-%m-%d")
             else:
                 sdate_str2 = str(sdate)
 
-            # 변경내용 문자열 구성
-            change_text = f"{before} → {after}"
-            if diff != 0:
-                change_text += f" (Δ {diff})"
-
             row_data = [
-                pk,
-                update_time_str,
-                log_id,
-                sdate_str2,
-                co,
-                vendor,
-                change_text,
+                mod_time_str,  # 변경시각
+                uname,  # 품명
+                content,  # 내용
+                user_id,  # User ID (맨 마지막)
             ]
 
             for col, val in enumerate(row_data):
                 item = QTableWidgetItem(str(val))
                 item.setFlags(item.flags() & ~Qt.ItemIsEditable)
                 self.table.setItem(row_idx, col, item)
+    
+    # ------------------------------------------------------
+    # 로그 기록(INSERT) 정적 메서드
+    # ------------------------------------------------------
+    @staticmethod
+    def log_change(user_id, sdate, uname, content, bigo=""):
+        """
+        DASHBOARD_LOG 테이블에 로그를 남깁니다.
+        modified_time은 파이썬 현재시간 사용.
+        """
+        now = datetime.datetime.now()
+        
+        conn, cur = getdb("GP")
+        try:
+            sql = """
+                INSERT INTO DASHBOARD_LOGS (
+                    modified_time, user_id, sdate, uname, content, bigo
+                ) VALUES (%s, %s, %s, %s, %s, %s)
+            """
+            # sdate가 QDate나 문자열일 수 있으므로 포맷 통일
+            if hasattr(sdate, "toString"): # QDate
+                 sdate_val = sdate.toString("yyyy-MM-dd")
+            elif isinstance(sdate, datetime.date):
+                 sdate_val = sdate.strftime("%Y-%m-%d")
+            else:
+                 sdate_val = str(sdate)
+
+            runquery(cur, sql, [now, user_id, sdate_val, uname, content, bigo])
+        except Exception as e:
+            print(f"[LOG ERROR] {e}")
+        finally:
+            closedb(conn)
+
+    @staticmethod
+    def log_action(user_id, sdate, content):
+        """
+        테이블 생성, 전체 삭제 등 uname이나 구체적 수치가 없는 시스템성 액션 로그.
+        """
+        DashboardLogDialog.log_change(user_id, sdate, "", content, "")
