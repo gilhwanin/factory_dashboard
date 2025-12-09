@@ -31,7 +31,7 @@ from dialog.DashboardLogDialog import DashboardLogDialog
 from dialog.ProductListDialog import ProductListDialog
 from dialog.ProductNameDialog import ProductNameDialog
 
-CURRENT_VERSION = "a-0011"
+CURRENT_VERSION = "a-0012"
 PROGRAM_NAME = "factory_dashboard"
 
 DB_NAME = "GP"
@@ -770,11 +770,11 @@ class OrderDashboardWidget(QWidget):
 
         # 3) 품명만 Fixed + 최소/최대 폭 고정
         header.setSectionResizeMode(target_col, QHeaderView.Fixed)
-        table.setColumnWidth(target_col, 480)
+        table.setColumnWidth(target_col, 400)
 
         # 최소/최대 고정
         table.horizontalHeader().setMinimumSectionSize(10)
-        table.setColumnWidth(target_col, 480)
+        table.setColumnWidth(target_col, 400)
 
     def _apply_column_visibility_rules(self):
         table = self.ui.tableWidget1
