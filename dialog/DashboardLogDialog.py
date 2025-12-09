@@ -13,6 +13,7 @@ from PyQt5.QtWidgets import (
     QLabel
 )
 from PyQt5.QtCore import Qt, QDate
+from PyQt5.QtGui import QFont
 
 from UTIL.utils_qt import apply_table_style
 from UTIL.db_handler import getdb, closedb, runquery
@@ -22,53 +23,82 @@ class DashboardLogDialog(QDialog):
     GP..DASHBOARD_LOG를 날짜별로 조회하는 팝업 (UTIL.db_handler 기반)
     로그 기록(INSERT) 기능도 포함.
     """
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("발주 로그 조회")
         self.resize(1000, 600)
 
-        # -------------------------------
-        # 레이아웃 구성
-        # -------------------------------
+        # ---------------------------------------------------------
+        # 🔥 상단 제어패널 크기 설정
+        # ---------------------------------------------------------
+        big_h = 34  # 높이 크게
+        big_font = QFont()
+        big_font.setPointSize(11)  # 폰트 크게
+
+        # ---------------------------------------------------------
+        # 전체 레이아웃
+        # ---------------------------------------------------------
         layout = QVBoxLayout(self)
 
-        # 상단 날짜 + 버튼
+        # -------------------------------
+        # 상단 날짜 + 조회 버튼
+        # -------------------------------
         top_layout = QHBoxLayout()
-        top_layout.addWidget(QLabel("날짜:"))
+
+        label = QLabel("날짜:")
+        label.setFont(big_font)
+        label.setFixedHeight(big_h)
+        top_layout.addWidget(label)
 
         self.dateEdit = QDateEdit()
         self.dateEdit.setCalendarPopup(True)
         self.dateEdit.setDate(QDate.currentDate())
+        self.dateEdit.setFont(big_font)
+        self.dateEdit.setFixedHeight(big_h)
+        self.dateEdit.setFixedWidth(120)
         top_layout.addWidget(self.dateEdit)
+
         self.btn_search = QPushButton("조회")
+        self.btn_search.setFont(big_font)
+        self.btn_search.setFixedHeight(big_h)
         top_layout.addWidget(self.btn_search)
 
         top_layout.addStretch()
         layout.addLayout(top_layout)
 
+        # -------------------------------
         # 중앙 테이블
+        # -------------------------------
         self.table = QTableWidget(self)
-        # 스키마: PK, modified_time, user_id, sdate, uname, content, bigo
         headers = ["변경시각", "품명", "내용", "ID"]
         self.table.setColumnCount(len(headers))
         self.table.setHorizontalHeaderLabels(headers)
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
-        # 🔹 테이블 스타일 적용
+        # 테이블 스타일 적용
         apply_table_style(self.table)
 
         layout.addWidget(self.table)
 
+        # -------------------------------
         # 하단 닫기 버튼
+        # -------------------------------
         btn_close = QPushButton("닫기")
+        btn_close.setFont(big_font)
+        btn_close.setFixedHeight(big_h)
         btn_close.clicked.connect(self.close)
         layout.addWidget(btn_close, alignment=Qt.AlignRight)
 
+        # -------------------------------
         # 이벤트 연결
+        # -------------------------------
         self.btn_search.clicked.connect(self.load_logs)
         self.dateEdit.dateChanged.connect(lambda _: self.load_logs())
 
+        # -------------------------------
         # 초기 데이터 로드
+        # -------------------------------
         self.load_logs()
 
     # ------------------------------------------------------
