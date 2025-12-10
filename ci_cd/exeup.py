@@ -187,4 +187,4 @@ def exeup(PNAME: str, VERSION: str):
         print("전체 프로세스 중 예외 발생:")
         print(traceback.format_exc())
 
-exeup("factory_dashboard", "a-0012")
+exeup("factory_dashboard", "a-0017")

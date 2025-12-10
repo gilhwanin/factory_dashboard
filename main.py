@@ -31,7 +31,7 @@ from dialog.DashboardLogDialog import DashboardLogDialog
 from dialog.ProductListDialog import ProductListDialog
 from dialog.ProductNameDialog import ProductNameDialog
 
-CURRENT_VERSION = "a-0012"
+CURRENT_VERSION = "a-0017"
 PROGRAM_NAME = "factory_dashboard"
 
 DB_NAME = "GP"
@@ -505,12 +505,12 @@ class OrderDashboardWidget(QWidget):
 
         table.setStyleSheet("""
                QTableWidget {
-                   font-size: 18px;
+                   font-size: 16px;
                    alternate-background-color: #f6f7fb;
                    gridline-color: #c0c0c0;
                }
                QHeaderView::section {
-                   font-size: 18px;
+                   font-size: 16px;
                    font-weight: bold;
                    color: black;
                    padding: 5px;
@@ -527,13 +527,13 @@ class OrderDashboardWidget(QWidget):
             "품명",
             "팩중량",
             "발주량",
-            "최종발주량",
+            "최종발주",
             "팩 차이",
             "전일 잔피",
             "생산 팩수",
             "생산계획",
             "팩수 to kg",
-            "데크출고량",
+            "데크출고",
             "당일 잔피",
             "수율",
             "작업상태",
@@ -658,7 +658,7 @@ class OrderDashboardWidget(QWidget):
         item.setData(Qt.UserRole, pk)
 
         font = QFont()
-        font.setPointSize(18)
+        font.setPointSize(16)
         font.setUnderline(underline)
         item.setFont(font)
 
@@ -770,11 +770,11 @@ class OrderDashboardWidget(QWidget):
 
         # 3) 품명만 Fixed + 최소/최대 폭 고정
         header.setSectionResizeMode(target_col, QHeaderView.Fixed)
-        table.setColumnWidth(target_col, 400)
+        table.setColumnWidth(target_col, 320)
 
         # 최소/최대 고정
         table.horizontalHeader().setMinimumSectionSize(10)
-        table.setColumnWidth(target_col, 400)
+        table.setColumnWidth(target_col, 320)
 
     def _apply_column_visibility_rules(self):
         table = self.ui.tableWidget1
@@ -785,8 +785,13 @@ class OrderDashboardWidget(QWidget):
             COL_PLAN_KG, COL_TODAY_RES
         ]
 
+        # 🔥 업체명(COL_VENDOR)은 무조건 숨김
+        table.setColumnHidden(COL_VENDOR, True)
 
         for col in admin_only_cols:
+            # 업체명은 이미 숨겼으므로 제외
+            if col == COL_VENDOR:
+                continue
             table.setColumnHidden(col, CURRENT_LEVEL < 2)
 
     #5. 데이터 로딩
@@ -1486,7 +1491,7 @@ class OrderDashboardWidget(QWidget):
             try:
                 df_old = runquery(cur, f"SELECT {field_name} FROM ORDER_DASHBOARD WHERE PK = %s", [pk])
                 if df_old is not None and not df_old.empty:
-                    old_val = int(df_old.iloc[0][0] or 0)
+                    old_val = int(df_old.iloc[0, 0] or 0)
             except:
                 pass
 
@@ -2766,12 +2771,23 @@ if __name__ == "__main__":
     try:
         app = QApplication(sys.argv)
         check_version_and_update(PROGRAM_NAME, CURRENT_VERSION)
+
         w = OrderDashboardWidget()
-        w.showMaximized()
+
+        # 화면 정보 가져오기
+        screen = app.primaryScreen().availableGeometry()
+        screen_height = screen.height()
+        screen_width = screen.width()
+
+        # 🔹 가로 1080 고정 + 세로 화면 전체로 설정
+        w.resize(screen_width, screen_height)
+
+        w.show()
         sys.exit(app.exec_())
+
     except Exception:
         import traceback
-
         print("\n===== 실행 중 오류 발생 =====")
         print(traceback.format_exc())
         input("\n엔터를 누르면 닫힙니다...")
+

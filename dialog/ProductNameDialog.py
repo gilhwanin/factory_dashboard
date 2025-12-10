@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import (
     QPushButton, QHeaderView, QMessageBox, QAbstractItemView
 )
 from PyQt5.QtCore import Qt
-from UTIL.db_handler import getdb, runquery, closedb, insert_record
+from UTIL.db_handler import getdb, runquery, closedb
 
 class ProductNameDialog(QDialog):
     def __init__(self, parent=None):

@@ -67,8 +67,8 @@ class Ui_Form(object):
         sizePolicy.setHeightForWidth(self.label_retailer.sizePolicy().hasHeightForWidth())
         self.label_retailer.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
-        font.setFamily("Noto Sans KR")
-        font.setPointSize(32)
+        font.setFamily("Noto Sans KR Medium")
+        font.setPointSize(40)
         self.label_retailer.setFont(font)
         self.label_retailer.setLineWidth(1)
         self.label_retailer.setScaledContents(False)
@@ -101,7 +101,7 @@ class Ui_Form(object):
         self.tabWidget.setMinimumSize(QtCore.QSize(0, 0))
         font = QtGui.QFont()
         font.setFamily("Noto Sans KR Medium")
-        font.setPointSize(18)
+        font.setPointSize(16)
         font.setBold(False)
         font.setWeight(50)
         self.tabWidget.setFont(font)
@@ -200,6 +200,11 @@ class Ui_Form(object):
         self.horizontalLayout_5.setContentsMargins(8, 4, 8, 4)
         self.horizontalLayout_5.setObjectName("horizontalLayout_5")
         self.frame = QtWidgets.QFrame(self.view_frame2)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.frame.sizePolicy().hasHeightForWidth())
+        self.frame.setSizePolicy(sizePolicy)
         self.frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.frame.setFrameShadow(QtWidgets.QFrame.Raised)
         self.frame.setObjectName("frame")
@@ -220,8 +225,8 @@ class Ui_Form(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.label_2.sizePolicy().hasHeightForWidth())
         self.label_2.setSizePolicy(sizePolicy)
-        self.label_2.setMinimumSize(QtCore.QSize(80, 0))
-        self.label_2.setMaximumSize(QtCore.QSize(48, 16777215))
+        self.label_2.setMinimumSize(QtCore.QSize(60, 0))
+        self.label_2.setMaximumSize(QtCore.QSize(32, 16777215))
         font = QtGui.QFont()
         font.setFamily("Noto Sans KR Medium")
         font.setPointSize(14)
@@ -237,7 +242,7 @@ class Ui_Form(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.dateEdit.sizePolicy().hasHeightForWidth())
         self.dateEdit.setSizePolicy(sizePolicy)
-        self.dateEdit.setMinimumSize(QtCore.QSize(120, 0))
+        self.dateEdit.setMinimumSize(QtCore.QSize(140, 0))
         font = QtGui.QFont()
         font.setFamily("Noto Sans KR Medium")
         font.setPointSize(14)
@@ -273,7 +278,7 @@ class Ui_Form(object):
         self.btn_prev.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Noto Sans KR Medium")
-        font.setPointSize(18)
+        font.setPointSize(16)
         self.btn_prev.setFont(font)
         self.btn_prev.setObjectName("btn_prev")
         self.horizontalLayout.addWidget(self.btn_prev)
@@ -285,7 +290,7 @@ class Ui_Form(object):
         self.btn_next.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Noto Sans KR Medium")
-        font.setPointSize(18)
+        font.setPointSize(16)
         self.btn_next.setFont(font)
         self.btn_next.setObjectName("btn_next")
         self.horizontalLayout.addWidget(self.btn_next)
@@ -298,7 +303,7 @@ class Ui_Form(object):
         self.btn_costco.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Noto Sans KR Medium")
-        font.setPointSize(18)
+        font.setPointSize(16)
         self.btn_costco.setFont(font)
         self.btn_costco.setStyleSheet("QPushButton {\n"
 "    background-color: #d7e9f8;\n"
@@ -323,7 +328,7 @@ class Ui_Form(object):
         self.btn_emart.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Noto Sans KR Medium")
-        font.setPointSize(18)
+        font.setPointSize(16)
         self.btn_emart.setFont(font)
         self.btn_emart.setStyleSheet("QPushButton {\n"
 "    background-color: #e8e1f3;\n"
@@ -349,7 +354,7 @@ class Ui_Form(object):
         self.btn_homeplus.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Noto Sans KR Medium")
-        font.setPointSize(18)
+        font.setPointSize(16)
         self.btn_homeplus.setFont(font)
         self.btn_homeplus.setStyleSheet("QPushButton {\n"
 "    background-color: #e9e3da;\n"
@@ -375,7 +380,7 @@ class Ui_Form(object):
         self.btn_kurly.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Noto Sans KR Medium")
-        font.setPointSize(18)
+        font.setPointSize(16)
         self.btn_kurly.setFont(font)
         self.btn_kurly.setStyleSheet("QPushButton {\n"
 "    background-color: #d9f1e7;\n"
@@ -469,7 +474,7 @@ class Ui_Form(object):
         self.btn_autoPage.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Noto Sans KR Medium")
-        font.setPointSize(18)
+        font.setPointSize(16)
         self.btn_autoPage.setFont(font)
         self.btn_autoPage.setObjectName("btn_autoPage")
         self.horizontalLayout_8.addWidget(self.btn_autoPage)
@@ -494,7 +499,7 @@ class Ui_Form(object):
         self.btn_hide_row.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Noto Sans KR Medium")
-        font.setPointSize(18)
+        font.setPointSize(16)
         self.btn_hide_row.setFont(font)
         self.btn_hide_row.setStyleSheet("QPushButton {\n"
 "    background-color: #fff0d6;\n"
@@ -513,7 +518,7 @@ class Ui_Form(object):
         self.btn_show_hide.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Noto Sans KR Medium")
-        font.setPointSize(18)
+        font.setPointSize(16)
         self.btn_show_hide.setFont(font)
         self.btn_show_hide.setStyleSheet("QPushButton {\n"
 "    background-color: #fff0d6;\n"
@@ -533,7 +538,7 @@ class Ui_Form(object):
         self.btn_product.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Noto Sans KR Medium")
-        font.setPointSize(18)
+        font.setPointSize(16)
         self.btn_product.setFont(font)
         self.btn_product.setStyleSheet("QPushButton {\n"
 "    background-color: #d7e9f8;\n"
@@ -558,7 +563,7 @@ class Ui_Form(object):
         self.btn_raw.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Noto Sans KR Medium")
-        font.setPointSize(18)
+        font.setPointSize(16)
         self.btn_raw.setFont(font)
         self.btn_raw.setStyleSheet("QPushButton {\n"
 "    background-color: #e8e1f3;\n"
@@ -584,7 +589,7 @@ class Ui_Form(object):
         self.btn_sauce.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Noto Sans KR Medium")
-        font.setPointSize(18)
+        font.setPointSize(16)
         self.btn_sauce.setFont(font)
         self.btn_sauce.setStyleSheet("QPushButton {\n"
 "    background-color: #e9e3da;\n"
@@ -610,7 +615,7 @@ class Ui_Form(object):
         self.btn_vege.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Noto Sans KR Medium")
-        font.setPointSize(18)
+        font.setPointSize(16)
         self.btn_vege.setFont(font)
         self.btn_vege.setStyleSheet("QPushButton {\n"
 "    background-color: #d9f1e7;\n"
@@ -649,7 +654,7 @@ class Ui_Form(object):
         self.btn_complete.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Noto Sans KR Medium")
-        font.setPointSize(18)
+        font.setPointSize(16)
         self.btn_complete.setFont(font)
         self.btn_complete.setStyleSheet("QPushButton {\n"
 "    background-color: #d7e9f8;\n"
@@ -669,7 +674,7 @@ class Ui_Form(object):
         self.btn_add.setMinimumSize(QtCore.QSize(120, 0))
         font = QtGui.QFont()
         font.setFamily("Noto Sans KR Medium")
-        font.setPointSize(18)
+        font.setPointSize(16)
         self.btn_add.setFont(font)
         self.btn_add.setStyleSheet("QPushButton {\n"
 "    background-color: #e9e3da;\n"
@@ -689,7 +694,7 @@ class Ui_Form(object):
         self.btn_del.setMinimumSize(QtCore.QSize(120, 0))
         font = QtGui.QFont()
         font.setFamily("Noto Sans KR Medium")
-        font.setPointSize(18)
+        font.setPointSize(16)
         self.btn_del.setFont(font)
         self.btn_del.setStyleSheet("QPushButton {\n"
 "    background-color: #e9e3da;\n"
@@ -709,7 +714,7 @@ class Ui_Form(object):
         self.btn_del_row.setMinimumSize(QtCore.QSize(120, 0))
         font = QtGui.QFont()
         font.setFamily("Noto Sans KR Medium")
-        font.setPointSize(18)
+        font.setPointSize(16)
         self.btn_del_row.setFont(font)
         self.btn_del_row.setStyleSheet("QPushButton {\n"
 "    background-color: #e9e3da;\n"
@@ -729,7 +734,7 @@ class Ui_Form(object):
         self.btn_update.setMinimumSize(QtCore.QSize(120, 0))
         font = QtGui.QFont()
         font.setFamily("Noto Sans KR Medium")
-        font.setPointSize(18)
+        font.setPointSize(16)
         self.btn_update.setFont(font)
         self.btn_update.setStyleSheet("QPushButton {\n"
 "    background-color: #d9f1e7;\n"
@@ -749,7 +754,7 @@ class Ui_Form(object):
         self.btn_update_product.setMinimumSize(QtCore.QSize(120, 0))
         font = QtGui.QFont()
         font.setFamily("Noto Sans KR Medium")
-        font.setPointSize(18)
+        font.setPointSize(16)
         self.btn_update_product.setFont(font)
         self.btn_update_product.setStyleSheet("QPushButton {\n"
 "    background-color: #d9f1e7;\n"
@@ -768,7 +773,7 @@ class Ui_Form(object):
         self.btn_excel.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Noto Sans KR Medium")
-        font.setPointSize(18)
+        font.setPointSize(16)
         self.btn_excel.setFont(font)
         self.btn_excel.setObjectName("btn_excel")
         self.horizontalLayout_3.addWidget(self.btn_excel)
@@ -781,7 +786,7 @@ class Ui_Form(object):
         self.btn_log.setMinimumSize(QtCore.QSize(120, 0))
         font = QtGui.QFont()
         font.setFamily("Noto Sans KR Medium")
-        font.setPointSize(18)
+        font.setPointSize(16)
         self.btn_log.setFont(font)
         self.btn_log.setObjectName("btn_log")
         self.horizontalLayout_3.addWidget(self.btn_log)
@@ -793,7 +798,7 @@ class Ui_Form(object):
         self.btn_custom.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Noto Sans KR Medium")
-        font.setPointSize(18)
+        font.setPointSize(16)
         self.btn_custom.setFont(font)
         self.btn_custom.setStyleSheet("QPushButton {\n"
 "    background-color: #e8e1f3;\n"
