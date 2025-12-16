@@ -141,7 +141,24 @@ def runquery(cursor: object, query: str, params: Optional[tuple] = None) -> Opti
         raise
     return None
 
+def insert_record(cursor: object, table_name: str, data: dict):
+    if not data:
+        raise ValueError("빈 데이터는 INSERT할 수 없습니다.")
 
+    fields = ", ".join(data.keys())
+    placeholders = ", ".join(["%s"] * len(data))
+    values = tuple(data.values())
+
+    query = f"""
+        INSERT INTO {table_name} ({fields})
+        OUTPUT INSERTED.*
+        VALUES ({placeholders})
+    """
+    cursor.execute(query, values)
+    row = cursor.fetchone()
+    cursor.connection.commit()
+
+    return row[0] if row else None
 
 def timeit(func):
     @wraps(func)

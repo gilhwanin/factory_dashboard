@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_Form(object):
     def setupUi(self, Form):
         Form.setObjectName("Form")
-        Form.resize(1506, 880)
+        Form.resize(1506, 847)
         self.verticalLayout_2 = QtWidgets.QVBoxLayout(Form)
         self.verticalLayout_2.setSpacing(0)
         self.verticalLayout_2.setObjectName("verticalLayout_2")
@@ -101,7 +101,7 @@ class Ui_Form(object):
         self.tabWidget.setMinimumSize(QtCore.QSize(0, 0))
         font = QtGui.QFont()
         font.setFamily("Noto Sans KR Medium")
-        font.setPointSize(16)
+        font.setPointSize(18)
         font.setBold(False)
         font.setWeight(50)
         self.tabWidget.setFont(font)
@@ -118,8 +118,8 @@ class Ui_Form(object):
         self.verticalLayout_3.setObjectName("verticalLayout_3")
         self.tableWidget1 = QtWidgets.QTableWidget(self.tab1)
         font = QtGui.QFont()
-        font.setFamily("Noto Sans KR")
-        font.setPointSize(18)
+        font.setFamily("Noto Sans KR Medium")
+        font.setPointSize(20)
         font.setBold(False)
         font.setWeight(50)
         font.setStyleStrategy(QtGui.QFont.PreferAntialias)
@@ -491,25 +491,6 @@ class Ui_Form(object):
         self.horizontalLayout_9 = QtWidgets.QHBoxLayout(self.frame_3)
         self.horizontalLayout_9.setContentsMargins(0, 0, 0, 0)
         self.horizontalLayout_9.setObjectName("horizontalLayout_9")
-        self.btn_hide_row = QtWidgets.QPushButton(self.frame_3)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.btn_hide_row.sizePolicy().hasHeightForWidth())
-        self.btn_hide_row.setSizePolicy(sizePolicy)
-        font = QtGui.QFont()
-        font.setFamily("Noto Sans KR Medium")
-        font.setPointSize(16)
-        self.btn_hide_row.setFont(font)
-        self.btn_hide_row.setStyleSheet("QPushButton {\n"
-"    background-color: #fff0d6;\n"
-"    border: 1px solid #94c5ad;\n"
-"    padding: 6px 12px;\n"
-"    border-radius: 6px;\n"
-"    color: #1f2d3d;\n"
-"}")
-        self.btn_hide_row.setObjectName("btn_hide_row")
-        self.horizontalLayout_9.addWidget(self.btn_hide_row)
         self.btn_show_hide = QtWidgets.QPushButton(self.frame_3)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
@@ -529,6 +510,25 @@ class Ui_Form(object):
 "}")
         self.btn_show_hide.setObjectName("btn_show_hide")
         self.horizontalLayout_9.addWidget(self.btn_show_hide)
+        self.btn_hide_row = QtWidgets.QPushButton(self.frame_3)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.btn_hide_row.sizePolicy().hasHeightForWidth())
+        self.btn_hide_row.setSizePolicy(sizePolicy)
+        font = QtGui.QFont()
+        font.setFamily("Noto Sans KR Medium")
+        font.setPointSize(16)
+        self.btn_hide_row.setFont(font)
+        self.btn_hide_row.setStyleSheet("QPushButton {\n"
+"    background-color: #fff0d6;\n"
+"    border: 1px solid #94c5ad;\n"
+"    padding: 6px 12px;\n"
+"    border-radius: 6px;\n"
+"    color: #1f2d3d;\n"
+"}")
+        self.btn_hide_row.setObjectName("btn_hide_row")
+        self.horizontalLayout_9.addWidget(self.btn_hide_row)
         self.horizontalLayout_6.addWidget(self.frame_3)
         self.btn_product = QtWidgets.QPushButton(self.view_frame)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
@@ -835,8 +835,8 @@ class Ui_Form(object):
         self.btn_kurly.setText(_translate("Form", "마켓컬리"))
         self.label_3.setText(_translate("Form", "화면전환 주기"))
         self.btn_autoPage.setText(_translate("Form", "화면고정"))
-        self.btn_hide_row.setText(_translate("Form", "행 숨김"))
         self.btn_show_hide.setText(_translate("Form", "숨김제외"))
+        self.btn_hide_row.setText(_translate("Form", "행 숨김"))
         self.btn_product.setText(_translate("Form", "제품"))
         self.btn_raw.setText(_translate("Form", "원료"))
         self.btn_sauce.setText(_translate("Form", "소스"))

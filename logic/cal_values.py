@@ -244,8 +244,8 @@ def get_costco_order_qty(base_co: str, sdate_str: str) -> int:
         pw = meta["pack_weight"]
         print(f"[TYPE] 자율 유형. 팩중량 = {pw}")
         if pw > 0:
-            final_qty = int(total_pack / pw)
-            print(f"[CALC] total_pack / {pw} = {final_qty}")
+            final_qty = int(round(total_pack / pw))
+            print(f"[CALC] round(total_pack / {pw}) = {final_qty}")
             print("==========[COSTCO DEBUG END]============\n")
             return final_qty
         else:

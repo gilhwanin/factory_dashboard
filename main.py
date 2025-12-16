@@ -1,8 +1,5 @@
 import sys
-from cProfile import label
-from datetime import datetime
 
-import pandas as pd
 from PyQt5.QtCore import Qt, QDate, QTimer
 from PyQt5.QtWidgets import (
     QApplication,
@@ -31,7 +28,7 @@ from dialog.DashboardLogDialog import DashboardLogDialog
 from dialog.ProductListDialog import ProductListDialog
 from dialog.ProductNameDialog import ProductNameDialog
 
-CURRENT_VERSION = "a-0017"
+CURRENT_VERSION = "a-0018"
 PROGRAM_NAME = "factory_dashboard"
 
 DB_NAME = "GP"
@@ -472,8 +469,9 @@ class OrderDashboardWidget(QWidget):
 
     def _auto_update_every_30min(self):
         """30분마다 자동 실행되는 두 함수"""
-        self.on_click_update_order_qty_after()
-        self.on_click_update_product()
+        print(f"[_auto_update_every_30min] {datetime.now()} 자동 갱신 시작 (silent=True)")
+        self.on_click_update_order_qty_after(silent=True)
+        self.on_click_update_product(silent=True)
         self.logout_if_logged_in()
 
     # ---------------------------------------------------------
@@ -504,22 +502,24 @@ class OrderDashboardWidget(QWidget):
         table.setEditTriggers(QAbstractItemView.DoubleClicked)
 
         table.setStyleSheet("""
-               QTableWidget {
-                   font-size: 16px;
-                   alternate-background-color: #f6f7fb;
-                   gridline-color: #c0c0c0;
-               }
-               QHeaderView::section {
-                   font-size: 16px;
-                   font-weight: bold;
-                   color: black;
-                   padding: 5px;
-                   border: 1px solid #a0a0a0;
-               }
-               QTableWidget::item {
-                   height: 32px;
-               }
-           """)
+            QTableWidget {
+                font-size: 20px;
+                alternate-background-color: #f6f7fb;
+                gridline-color: #c0c0c0;
+            }
+            QHeaderView::section {
+                font-size: 20px;
+                font-weight: bold;
+                font-weight: bold;
+                color: black;
+                padding: 5px;
+                border: 1px solid #a0a0a0;
+            }
+        """)
+
+        # 🔥 행 높이 고정 (여기!)
+        table.verticalHeader().setDefaultSectionSize(52)
+        table.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)
 
     def _setup_product_headers(self, table):
         headers = [
@@ -658,16 +658,16 @@ class OrderDashboardWidget(QWidget):
         item.setData(Qt.UserRole, pk)
 
         font = QFont()
-        font.setPointSize(16)
+        font.setPointSize(20)
         font.setUnderline(underline)
         item.setFont(font)
 
         item.setTextAlignment(alignment)
 
-        # 🔸 LEVEL 2 이상만 실제 편집 가능
+        # 🔸 LEVEL 1 이상만 실제 편집 가능
         base_flags = item.flags()
 
-        if editable and CURRENT_LEVEL >= 2:
+        if editable and CURRENT_LEVEL >= 1:
             # 편집 가능
             item.setFlags(base_flags | Qt.ItemIsEditable | Qt.ItemIsEnabled | Qt.ItemIsSelectable)
             item.setForeground(QBrush(QColor("#777777")))
@@ -770,16 +770,16 @@ class OrderDashboardWidget(QWidget):
 
         # 3) 품명만 Fixed + 최소/최대 폭 고정
         header.setSectionResizeMode(target_col, QHeaderView.Fixed)
-        table.setColumnWidth(target_col, 320)
+        table.setColumnWidth(target_col, 540)
 
         # 최소/최대 고정
         table.horizontalHeader().setMinimumSectionSize(10)
-        table.setColumnWidth(target_col, 320)
+        table.setColumnWidth(target_col, 540)
 
     def _apply_column_visibility_rules(self):
         table = self.ui.tableWidget1
 
-        # 관리자 레벨 2 이상만 보여야 하는 컬럼
+        # 관리자 레벨 1 이상만 보여야 하는 컬럼
         admin_only_cols = [
             COL_VENDOR, COL_PKG, COL_PREV_RES, COL_PRODUCTION,
             COL_PLAN_KG, COL_TODAY_RES
@@ -792,7 +792,7 @@ class OrderDashboardWidget(QWidget):
             # 업체명은 이미 숨겼으므로 제외
             if col == COL_VENDOR:
                 continue
-            table.setColumnHidden(col, CURRENT_LEVEL < 2)
+            table.setColumnHidden(col, CURRENT_LEVEL < 1)
 
     #5. 데이터 로딩
     def _load_product_tab(self):
@@ -925,7 +925,6 @@ class OrderDashboardWidget(QWidget):
 
                 table.setItem(row_idx, col, item)
 
-        table.verticalHeader().setDefaultSectionSize(46)
         self._apply_column_resize_rules()
 
         if not self._product_table_item_changed_connected:
@@ -1003,7 +1002,7 @@ class OrderDashboardWidget(QWidget):
                 item = self._create_raw_item(value, pk, col_idx)
                 table.setItem(row_idx, col_idx, item)
 
-        table.verticalHeader().setDefaultSectionSize(46)
+        table.verticalHeader().setDefaultSectionSize(50)
         self._apply_column_resize_rules()
 
         if not self._raw_table_item_changed_connected:
@@ -2386,7 +2385,7 @@ class OrderDashboardWidget(QWidget):
     # -----------------------------------------------------
     # 생산량(produced_qty) 재계산 & UPDATE
     # -----------------------------------------------------
-    def on_click_update_product(self):
+    def on_click_update_product(self, checked=False, *, silent=False):
         """
         btn_update_product 클릭 시,
         현재 dateEdit 기준으로 ORDER_DASHBOARD.produced_qty 갱신.
@@ -2407,7 +2406,11 @@ class OrderDashboardWidget(QWidget):
             try:
                 conn, cur = getdb(DB_NAME)
             except Exception as e:
-                QMessageBox.critical(self, "DB 오류", f"{DB_NAME} 연결 실패:\n{e}")
+                msg = f"{DB_NAME} 연결 실패:\n{e}"
+                if not silent:
+                    QMessageBox.critical(self, "DB 오류", msg)
+                else:
+                    print(f"[ERROR] {msg}")
                 return
 
             try:
@@ -2419,7 +2422,11 @@ class OrderDashboardWidget(QWidget):
                 df = runquery(cur, sql, [sdate_str])
             except Exception as e:
                 closedb(conn)
-                QMessageBox.critical(self, "DB 오류", f"ORDER_DASHBOARD 조회 실패:\n{e}")
+                msg = f"ORDER_DASHBOARD 조회 실패:\n{e}"
+                if not silent:
+                    QMessageBox.critical(self, "DB 오류", msg)
+                else:
+                    print(f"[ERROR] {msg}")
                 return
             finally:
                 try:
@@ -2428,7 +2435,10 @@ class OrderDashboardWidget(QWidget):
                     print(f"[WARN] {DB_NAME} 연결 종료 실패: {e}")
 
             if df is None or len(df) == 0:
-                QMessageBox.information(self, "안내", f"{sdate_str} 기준 데이터가 없습니다.")
+                if not silent:
+                    QMessageBox.information(self, "안내", f"{sdate_str} 기준 데이터가 없습니다.")
+                else:
+                    print(f"[INFO] {sdate_str} 기준 데이터가 없습니다.")
                 return
 
             df = pd.DataFrame(df)
@@ -2438,7 +2448,11 @@ class OrderDashboardWidget(QWidget):
             try:
                 conn_u, cur_u = getdb(DB_NAME)
             except Exception as e:
-                QMessageBox.critical(self, "DB 오류", f"{DB_NAME} 연결 실패(UPDATE):\n{e}")
+                msg = f"{DB_NAME} 연결 실패(UPDATE):\n{e}"
+                if not silent:
+                    QMessageBox.critical(self, "DB 오류", msg)
+                else:
+                    print(f"[ERROR] {msg}")
                 return
 
             updated_cnt = 0
@@ -2481,11 +2495,11 @@ class OrderDashboardWidget(QWidget):
                 except Exception as e:
                     print(f"[WARN] {DB_NAME} 연결 종료 실패(UPDATE): {e}")
 
-            QMessageBox.information(
-                self,
-                "완료",
-                f"{sdate_str} 기준 {updated_cnt}개 품목의 생산 팩수(produced_qty)를 갱신했습니다.",
-            )
+            msg = f"{sdate_str} 기준 {updated_cnt}개 품목의 생산 팩수(produced_qty)를 갱신했습니다."
+            if not silent:
+                QMessageBox.information(self, "완료", msg)
+            else:
+                print(f"[INFO] {msg}")
             self._load_product_tab()
 
         except Exception as e:
@@ -2497,7 +2511,7 @@ class OrderDashboardWidget(QWidget):
     # -----------------------------------------------------
     # 발주량 재계산 & UPDATE
     # -----------------------------------------------------
-    def on_click_update_order_qty_after(self):
+    def on_click_update_order_qty_after(self, checked=False, *, silent=False):
         """
         선택 날짜의 모든 제품에 대해 '최종 발주량(order_qty_after)'을 재계산하여 UPDATE.
         - 홈플러스: 박스 수 × PACSU → 팩 수
@@ -2509,7 +2523,10 @@ class OrderDashboardWidget(QWidget):
         sdate_str = qdate.toString("yyyy-MM-dd")
 
         if not PRODUCT_LIST:
-            QMessageBox.information(self, "안내", "PRODUCT_LIST가 비어 있습니다.")
+            if not silent:
+                QMessageBox.information(self, "안내", "PRODUCT_LIST가 비어 있습니다.")
+            else:
+                print("[INFO] PRODUCT_LIST가 비어 있습니다.")
             return
 
         conn, cur = getdb(DB_NAME)
@@ -2574,12 +2591,11 @@ class OrderDashboardWidget(QWidget):
         recalc_dashboard_sauce_keep_manual(sdate_str)
         recalc_dashboard_vege_keep_manual(sdate_str)
 
-        QMessageBox.information(
-            self,
-            "완료",
-            "모든 제품의 최종 발주량(order_qty_after)이 재계산되었고,\n"
-            "원료/소스/야채 대시보드도 최신 기준으로 반영되었습니다."
-        )
+        msg = "모든 제품의 최종 발주량(order_qty_after)이 재계산되었고,\n원료/소스/야채 대시보드도 최신 기준으로 반영되었습니다."
+        if not silent:
+            QMessageBox.information(self, "완료", msg)
+        else:
+            print(f"[INFO] {msg.replace(chr(10), ' ')}")
 
         # 제품 탭 갱신
         self._load_product_tab()
