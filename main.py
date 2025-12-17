@@ -510,7 +510,6 @@ class OrderDashboardWidget(QWidget):
             QHeaderView::section {
                 font-size: 20px;
                 font-weight: bold;
-                font-weight: bold;
                 color: black;
                 padding: 5px;
                 border: 1px solid #a0a0a0;
