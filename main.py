@@ -28,7 +28,7 @@ from dialog.DashboardLogDialog import DashboardLogDialog
 from dialog.ProductListDialog import ProductListDialog
 from dialog.ProductNameDialog import ProductNameDialog
 
-CURRENT_VERSION = "a-0018"
+CURRENT_VERSION = "a-0019"
 PROGRAM_NAME = "factory_dashboard"
 
 DB_NAME = "GP"
@@ -41,18 +41,19 @@ CURRENT_USER = None  # 선택
 # ---------------------------------------------------------
 COL_VENDOR = 0
 COL_PRODUCT = 1
-COL_PKG = 2
-COL_ORDER = 3
-COL_FINAL_ORDER = 4
-COL_DIFF = 5
-COL_PREV_RES = 6
-COL_PRODUCTION = 7
-COL_PLAN = 8
-COL_PLAN_KG = 9
-COL_CUR_PROD = 10
-COL_TODAY_RES = 11
-COL_TRATE = 12
-COL_WORK_STATUS = 13
+COL_DEADLINE = 2
+COL_PKG = 3
+COL_ORDER = 4
+COL_FINAL_ORDER = 5
+COL_DIFF = 6
+COL_PREV_RES = 7
+COL_PRODUCTION = 8
+COL_PLAN = 9
+COL_PLAN_KG = 10
+COL_CUR_PROD = 11
+COL_TODAY_RES = 12
+COL_TRATE = 13
+COL_WORK_STATUS = 14
 
 class OrderDashboardWidget(QWidget):
 
@@ -517,13 +518,14 @@ class OrderDashboardWidget(QWidget):
         """)
 
         # 🔥 행 높이 고정 (여기!)
-        table.verticalHeader().setDefaultSectionSize(52)
+        table.verticalHeader().setDefaultSectionSize(60)
         table.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)
 
     def _setup_product_headers(self, table):
         headers = [
             "업체명",
             "품명",
+            "소비기한",
             "팩중량",
             "발주량",
             "최종발주",
@@ -657,7 +659,7 @@ class OrderDashboardWidget(QWidget):
         item.setData(Qt.UserRole, pk)
 
         font = QFont()
-        font.setPointSize(20)
+        font.setPointSize(24)
         font.setUnderline(underline)
         item.setFont(font)
 
@@ -681,7 +683,7 @@ class OrderDashboardWidget(QWidget):
 
     def _create_product_item(self, text: str, pk: int, col: int):
         # 정렬
-        if col == COL_WORK_STATUS:
+        if col == COL_WORK_STATUS or col == COL_DEADLINE:
             alignment = Qt.AlignCenter
         elif col in (COL_VENDOR, COL_PRODUCT):
             alignment = Qt.AlignLeft | Qt.AlignVCenter
@@ -749,31 +751,40 @@ class OrderDashboardWidget(QWidget):
         header = table.horizontalHeader()
         col_count = table.columnCount()
 
-        # 0) 레이아웃 재계산 클리어
+        # 0) 레이아웃 재계산
         table.resizeColumnsToContents()
 
-        # 1) 품명 컬럼 찾기
-        target_col = None
+        # 1) 타겟 컬럼 찾기
+        name_col = None
+        deadline_col = None
+
         for col in range(col_count):
             item = table.horizontalHeaderItem(col)
-            if item and item.text().strip() == "품명":
-                target_col = col
-                break
+            if not item:
+                continue
 
-        if target_col is None:
-            return
+            text = item.text().strip()
+            if text == "품명":
+                name_col = col
+            elif text == "소비기한":
+                deadline_col = col
 
-        # 2) 모든 열 Stretch
+        # 2) 기본: 전체 Stretch
         for c in range(col_count):
             header.setSectionResizeMode(c, QHeaderView.Stretch)
 
-        # 3) 품명만 Fixed + 최소/최대 폭 고정
-        header.setSectionResizeMode(target_col, QHeaderView.Fixed)
-        table.setColumnWidth(target_col, 540)
+        # 3) 품명 컬럼 고정
+        if name_col is not None:
+            header.setSectionResizeMode(name_col, QHeaderView.Fixed)
+            table.setColumnWidth(name_col, 540)
 
-        # 최소/최대 고정
-        table.horizontalHeader().setMinimumSectionSize(10)
-        table.setColumnWidth(target_col, 540)
+        # 4) 소비기한 컬럼 고정
+        if deadline_col is not None:
+            header.setSectionResizeMode(deadline_col, QHeaderView.Fixed)
+            table.setColumnWidth(deadline_col, 160)
+
+        # 최소 폭 제한
+        header.setMinimumSectionSize(10)
 
     def _apply_column_visibility_rules(self):
         table = self.ui.tableWidget1
@@ -805,28 +816,32 @@ class OrderDashboardWidget(QWidget):
         try:
             sql = """
                 SELECT
-                    PK, co, rname, uname, pkg,
-                    order_qty, order_qty_after,
-                    prev_residue, production_plan,
-                    produced_qty, today_residue,
-                    work_status
-                FROM ORDER_DASHBOARD
-                WHERE CONVERT(DATE, sdate) = %s
+                    A.PK, A.co, A.rname, A.uname, A.pkg,
+                    A.order_qty, A.order_qty_after,
+                    A.prev_residue, A.production_plan,
+                    A.produced_qty, A.today_residue,
+                    A.work_status,
+                    B.deadline
+                FROM ORDER_DASHBOARD A
+                LEFT JOIN Dashboard_UNAME_MAP B 
+                       ON A.uname = B.before_value 
+                      AND A.rname = B.retailer
+                WHERE CONVERT(DATE, A.sdate) = %s
             """
 
             params = [sdate_str]
 
             if not self.show_hidden:
-                sql += " AND (hide = 0 OR hide IS NULL)"
+                sql += " AND (A.hide = 0 OR A.hide IS NULL)"
 
             # 🔹 업체별 필터링
             if self.current_vendor == "코스트코":
-                sql += " AND rname IN ('코스트코', '코스온')"
+                sql += " AND A.rname IN ('코스트코', '코스온')"
             else:
-                sql += " AND rname = %s"
+                sql += " AND A.rname = %s"
                 params.append(self.current_vendor)
 
-            sql += " ORDER BY PK"
+            sql += " ORDER BY A.PK"
 
             df = runquery(cur, sql, params)
         finally:
@@ -897,9 +912,22 @@ class OrderDashboardWidget(QWidget):
             else:
                 work_status = ""
 
+            # 소비기한 계산
+            deadline_val = ""
+
+            if row.DEADLINE is not None and not pd.isna(row.DEADLINE):
+                try:
+                    days = int(float(row.DEADLINE))   # pandas float → int 안전 변환
+                    calc_date = qdate.addDays(days)
+                    deadline_val = calc_date.toString("yy-MM-dd")
+                except:
+                    deadline_val = ""
+
+
             values = [
                 rname,
                 uname,
+                deadline_val, # COL_DEADLINE
                 fmt(f"{pkg:.1f}"),
                 fmt(order_qty),
                 fmt(order_qty_after),
@@ -907,7 +935,7 @@ class OrderDashboardWidget(QWidget):
                 fmt(prev_residue),
                 fmt(production_qty),
                 fmt(plan_qty),
-                fmt(f"{plan_kg:.1f}"),
+                fmt(round(plan_kg)),
                 fmt(produced_qty),
                 fmt(today_residue),
                 trate_text,  # COL_TRATE
