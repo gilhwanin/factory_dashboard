@@ -318,7 +318,7 @@ def get_pacsu_by_co(co: str) -> int:
 # -----------------------------------------------------
 # 생산량(팩수) 조회
 # -----------------------------------------------------
-def get_produced_qty_packs(co: str, sdate_str: str, pacsu: int) -> int:
+def get_produced_qty_packs(co: str, sdate_str: str, pacsu: int) -> tuple:
     try:
         conn, cur = getdb("GFOOD_B")
     except:
@@ -326,7 +326,7 @@ def get_produced_qty_packs(co: str, sdate_str: str, pacsu: int) -> int:
 
     try:
         sql = """
-            SELECT ISNULL(SUM(PAN),0) AS sum_pan
+            SELECT ISNULL(SUM(PAN),0) AS sum_pan, MAX(CDATE) as max_time
             FROM PAN
             WHERE CH = 'C'
               AND JNAME = '공장(양념육)'
@@ -338,14 +338,21 @@ def get_produced_qty_packs(co: str, sdate_str: str, pacsu: int) -> int:
         closedb(conn)
 
     if df is None or df.empty:
-        return 0
+        return 0, None
 
     try:
-        box_sum = int(df.iloc[0, 0] or 0)
+        box_sum = int(df.iloc[0]["sum_pan"] or 0)
     except:
         box_sum = 0
+    
+    time_val = None
+    try:
+        time_val = df.iloc[0]["max_time"]
+        # pd.NaT or None check if needed, but usually None from DB
+    except:
+        pass
 
-    return box_sum * (pacsu if pacsu > 0 else 1)
+    return box_sum * (pacsu if pacsu > 0 else 1), time_val
 
 
 # -----------------------------------------------------

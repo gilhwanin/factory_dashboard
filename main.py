@@ -28,7 +28,7 @@ from dialog.DashboardLogDialog import DashboardLogDialog
 from dialog.ProductListDialog import ProductListDialog
 from dialog.ProductNameDialog import ProductNameDialog
 
-CURRENT_VERSION = "a-0021"
+CURRENT_VERSION = "a-0025"
 PROGRAM_NAME = "factory_dashboard"
 
 DB_NAME = "GP"
@@ -51,9 +51,10 @@ COL_PRODUCTION = 8
 COL_PLAN = 9
 COL_PLAN_KG = 10
 COL_CUR_PROD = 11
-COL_TODAY_RES = 12
-COL_TRATE = 13
-COL_WORK_STATUS = 14
+COL_SHIPMENT_TIME = 12  # 🔹 새로 추가
+COL_TODAY_RES = 13
+COL_TRATE = 14
+COL_WORK_STATUS = 15
 
 class OrderDashboardWidget(QWidget):
 
@@ -141,9 +142,11 @@ class OrderDashboardWidget(QWidget):
         self.ui.btn_admin.clicked.connect(self.on_click_toggle_admin)
         self.ui.btn_complete.clicked.connect(self.on_click_complete_product)
         self.ui.btn_custom.clicked.connect(self.on_click_custom)
+        self.ui.btn_renew.clicked.connect(self._renew_values_manually)
 
         self.ui.btn_hide_row.clicked.connect(self.on_click_hide_row)
         self.ui.btn_show_hide.clicked.connect(self.on_click_toggle_show_hide)
+        self.ui.ml_check.stateChanged.connect(self._load_product_tab)
 
         # 🔹 화면 전환/고정 버튼 (autoPage)
         self.ui.btn_autoPage.setText("화면고정")
@@ -480,6 +483,12 @@ class OrderDashboardWidget(QWidget):
         self.on_click_update_product(silent=True)
         self.logout_if_logged_in()
 
+    def _renew_values_manually(self):
+        """수동 갱신 버튼 클릭 시 실행되는 두 함수"""
+        print(f"[_renew_values_manually] {datetime.now()} 수동 갱신 시작 (silent=False)")
+        self.on_click_update_order_qty_after(silent=True)
+        self.on_click_update_product(silent=True)
+
     # ---------------------------------------------------------
     # 업체 필터링 (제품 탭)
     # ---------------------------------------------------------
@@ -540,6 +549,7 @@ class OrderDashboardWidget(QWidget):
             "생산계획",
             "팩수 to kg",
             "데크출고",
+            "최근출고",  # 🔹 추가
             "당일 잔피",
             "수율",
             "작업상태",
@@ -557,7 +567,7 @@ class OrderDashboardWidget(QWidget):
             if not item:
                 continue
 
-            elif col in (COL_FINAL_ORDER, COL_CUR_PROD):
+            elif col in (COL_FINAL_ORDER, COL_CUR_PROD, COL_SHIPMENT_TIME):
                 item.setBackground(QBrush(header_live))
             else:
                 item.setBackground(QBrush(header_normal))
@@ -691,7 +701,7 @@ class OrderDashboardWidget(QWidget):
 
     def _create_product_item(self, text: str, pk: int, col: int):
         # 정렬
-        if col == COL_WORK_STATUS or col == COL_DEADLINE:
+        if col == COL_WORK_STATUS or col == COL_DEADLINE or col == COL_SHIPMENT_TIME:
             alignment = Qt.AlignCenter
         elif col in (COL_VENDOR, COL_PRODUCT):
             alignment = Qt.AlignLeft | Qt.AlignVCenter
@@ -829,7 +839,8 @@ class OrderDashboardWidget(QWidget):
                     A.prev_residue, A.production_plan,
                     A.produced_qty, A.today_residue,
                     A.work_status,
-                    B.deadline
+                    B.deadline,
+                    A.recent_chulgo  -- 🔹 추가
                 FROM ORDER_DASHBOARD A
                 LEFT JOIN Dashboard_UNAME_MAP B 
                        ON A.uname = B.before_value 
@@ -885,6 +896,19 @@ class OrderDashboardWidget(QWidget):
             produced_qty = int(row.PRODUCED_QTY)
             today_residue = int(row.TODAY_RESIDUE)
             production_plan = int(row.PRODUCTION_PLAN)
+            
+            # 🔹 최근출고 시각 포맷팅
+            recent_chulgo_val = row.RECENT_CHULGO
+            shipment_time_str = "-"
+            if recent_chulgo_val:
+                try:
+                     s_val = str(recent_chulgo_val)
+                     if len(s_val) >= 16:
+                         shipment_time_str = s_val[11:16] # "yyyy-mm-dd HH:MM..."
+                except:
+                    pass
+            
+
 
             # 계산 필드
             diff = order_qty_after - order_qty
@@ -926,7 +950,7 @@ class OrderDashboardWidget(QWidget):
             if row.DEADLINE is not None and not pd.isna(row.DEADLINE):
                 try:
                     days = int(float(row.DEADLINE))   # pandas float → int 안전 변환
-                    calc_date = qdate.addDays(days)
+                    calc_date = qdate.addDays(days-1)
                     deadline_val = calc_date.toString("yy-MM-dd")
                 except:
                     deadline_val = ""
@@ -945,6 +969,7 @@ class OrderDashboardWidget(QWidget):
                 fmt(plan_qty),
                 fmt(round(plan_kg)),
                 fmt(produced_qty),
+                shipment_time_str,  # 🔹 COL_SHIPMENT_TIME 추가
                 fmt(today_residue),
                 trate_text,  # COL_TRATE
                 work_status  # COL_WORK_STATUS
@@ -968,6 +993,13 @@ class OrderDashboardWidget(QWidget):
 
         table.blockSignals(False)
         self._apply_column_visibility_rules()
+        
+        # 🔹 최근출고 컬럼 숨김/표시
+        
+        # 🔹 최근출고(물류용) 모드: 최근출고 표시, 수율 숨김
+        is_logistics_mode = self.ui.ml_check.isChecked()
+        table.setColumnHidden(COL_SHIPMENT_TIME, not is_logistics_mode)
+        table.setColumnHidden(COL_TRATE, is_logistics_mode)
 
     def _load_raw_tab(self):
         table = self.ui.tableWidget2
@@ -1208,7 +1240,7 @@ class OrderDashboardWidget(QWidget):
                     PK, rname, uname, pkg,
                     order_qty, order_qty_after,
                     prev_residue, production_plan, produced_qty,
-                    today_residue
+                    today_residue, recent_chulgo
                 FROM ORDER_DASHBOARD
                 WHERE PK = %s
             """
@@ -1265,6 +1297,14 @@ class OrderDashboardWidget(QWidget):
         else:
             work_status = ""
 
+        # 🔹 최근출고 시각 포맷팅 (단일 갱신)
+        recent_chulgo_val = r.get("RECENT_CHULGO")
+        shipment_time_str = "-"
+        if recent_chulgo_val:
+            s_val = str(recent_chulgo_val)
+            if len(s_val) >= 16:
+                shipment_time_str = s_val[11:16]
+
         # -------------------------
         # 테이블 적용값 구성
         # -------------------------
@@ -1280,6 +1320,7 @@ class OrderDashboardWidget(QWidget):
             COL_PLAN: fmt(production_plan),
             COL_PLAN_KG: fmt(f"{plan_kg:.1f}"),
             COL_CUR_PROD: fmt(produced_qty),
+            COL_SHIPMENT_TIME: shipment_time_str, # 🔹 추가
             COL_TODAY_RES: fmt(today_residue),
             COL_TRATE: trate_text,
             COL_WORK_STATUS: work_status,
@@ -2504,20 +2545,21 @@ class OrderDashboardWidget(QWidget):
                         print(f"[ERROR] get_pacsu_by_co({co_str}) 예외: {e}")
                         pacsu = 1
 
-                    # 생산 팩 수 계산
-                    produced_qty = get_produced_qty_packs(co_str, sdate_str, pacsu)
+                    # 생산 팩 수 및 시간(datetime) 계산
+                    produced_qty, recent_time_val = get_produced_qty_packs(co_str, sdate_str, pacsu)
 
-                    # produced_qty 업데이트
+                    # produced_qty 및 recent_chulgo 업데이트
                     try:
                         runquery(
                             cur_u,
                             """
                             UPDATE ORDER_DASHBOARD
-                            SET produced_qty = %s
+                            SET produced_qty = %s,
+                                recent_chulgo = %s
                             WHERE CONVERT(DATE, sdate) = %s
                               AND co = %s
                             """,
-                            [produced_qty, sdate_str, co_str],
+                            [produced_qty, recent_time_val, sdate_str, co_str],
                         )
                         updated_cnt += 1
                     except Exception as e:
