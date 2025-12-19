@@ -448,23 +448,69 @@
           </widget>
          </item>
          <item>
-          <widget class="QPushButton" name="btn_admin">
-           <property name="font">
-            <font>
-             <family>Noto Sans KR Medium</family>
-             <pointsize>14</pointsize>
-            </font>
+          <widget class="QFrame" name="frame_8">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
            </property>
-           <property name="styleSheet">
-            <string notr="true">QPushButton {
+           <property name="frameShape">
+            <enum>QFrame::StyledPanel</enum>
+           </property>
+           <property name="frameShadow">
+            <enum>QFrame::Raised</enum>
+           </property>
+           <layout class="QHBoxLayout" name="horizontalLayout_10">
+            <property name="spacing">
+             <number>24</number>
+            </property>
+            <property name="leftMargin">
+             <number>0</number>
+            </property>
+            <property name="topMargin">
+             <number>0</number>
+            </property>
+            <property name="rightMargin">
+             <number>0</number>
+            </property>
+            <property name="bottomMargin">
+             <number>0</number>
+            </property>
+            <item>
+             <widget class="QPushButton" name="btn_admin">
+              <property name="font">
+               <font>
+                <family>Noto Sans KR Medium</family>
+                <pointsize>14</pointsize>
+               </font>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QPushButton {
     background-color: #EEEEEE;
     border: 1px solid #CCCCCC;
     color: #AAAAAA;
 }</string>
-           </property>
-           <property name="text">
-            <string>관리자</string>
-           </property>
+              </property>
+              <property name="text">
+               <string>관리자</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="ml_check">
+              <property name="font">
+               <font>
+                <family>Noto Sans KR Medium</family>
+                <pointsize>14</pointsize>
+               </font>
+              </property>
+              <property name="text">
+               <string>물류 UI</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
           </widget>
          </item>
         </layout>

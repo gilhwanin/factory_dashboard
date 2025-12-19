@@ -28,7 +28,7 @@ from dialog.DashboardLogDialog import DashboardLogDialog
 from dialog.ProductListDialog import ProductListDialog
 from dialog.ProductNameDialog import ProductNameDialog
 
-CURRENT_VERSION = "a-0019"
+CURRENT_VERSION = "a-0021"
 PROGRAM_NAME = "factory_dashboard"
 
 DB_NAME = "GP"
@@ -280,8 +280,13 @@ class OrderDashboardWidget(QWidget):
             if df is not None and not df.empty:
                 for _, row in df.iterrows():
                     bf = str(row['before_value']).strip()
-                    af = str(row['after_value']).strip()
-                    self.uname_map_cache[bf] = af
+                    af = row['after_value']
+
+                    # after_value가 유효할 때만 매핑
+                    if af is not None:
+                        af = str(af).strip()
+                        if af:  # 빈 문자열 제외
+                            self.uname_map_cache[bf] = af
         except Exception as e:
             print(f"매핑 캐시 로드 실패 (테이블이 없거나 오류): {e}")
         finally:
@@ -659,7 +664,10 @@ class OrderDashboardWidget(QWidget):
         item.setData(Qt.UserRole, pk)
 
         font = QFont()
-        font.setPointSize(24)
+        if CURRENT_LEVEL >= 1:
+            font.setPointSize(20)
+        else:
+            font.setPointSize(24)
         font.setUnderline(underline)
         item.setFont(font)
 
@@ -889,7 +897,7 @@ class OrderDashboardWidget(QWidget):
             # 🔵 수율 계산
             if production_plan > 0:
                 trate_value = (order_qty_after - prev_residue + today_residue) * 100 / production_plan
-                trate_text = f"{trate_value:.2f}"
+                trate_text = f"{trate_value:.1f}"
             else:
                 trate_text = "-"
 
