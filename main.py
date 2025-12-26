@@ -28,7 +28,7 @@ from dialog.DashboardLogDialog import DashboardLogDialog
 from dialog.ProductListDialog import ProductListDialog
 from dialog.ProductNameDialog import ProductNameDialog
 
-CURRENT_VERSION = "a-0025"
+CURRENT_VERSION = "a-0028"
 PROGRAM_NAME = "factory_dashboard"
 
 DB_NAME = "GP"
@@ -443,7 +443,7 @@ class OrderDashboardWidget(QWidget):
             # [자동전환 모드]
             self.rotation_index = (self.rotation_index + 1) % len(self.vendors_rotation)
             next_vendor = self.vendors_rotation[self.rotation_index]
-            
+
              # UI 상단 라벨에도 표시 (있으면)
             self.ui.label_retailer.setText(next_vendor)
 
@@ -822,6 +822,78 @@ class OrderDashboardWidget(QWidget):
                 continue
             table.setColumnHidden(col, CURRENT_LEVEL < 1)
 
+    def calc_trate(
+            self,
+            *,
+            co: str,
+            order_qty_after: int,
+            prev_residue: int,
+            today_residue: int,
+            production_plan: int,
+            produced_qty: int,
+            sdate_str: str,  # ← 날짜 필요
+    ):
+        if production_plan <= 0:
+            return "-", None
+
+        co = str(co).strip()
+
+        try:
+            # ==================================================
+            # 🔥 예외 품목: 502415
+            # ==================================================
+            if co == "502415":
+                # 같은 날짜, 502415 품목의 최종발주량 조회
+                conn, cur = getdb(DB_NAME)
+                try:
+                    df = runquery(
+                        cur,
+                        """
+                        SELECT ISNULL(SUM(order_qty_after), 0) AS qty
+                        FROM ORDER_DASHBOARD
+                        WHERE CONVERT(DATE, sdate) = %s
+                          AND co = %s
+                        """,
+                        [sdate_str, "511540"],
+                    )
+                    other_qty = int(df.iloc[0]["qty"]) if df is not None and not df.empty else 0
+                finally:
+                    closedb(conn)
+
+                X = order_qty_after + int(other_qty/2)
+                trate_val = (
+                        (X - prev_residue + today_residue)
+                        * 100
+                        / production_plan
+                )
+
+            # ==================================================
+            # 🔹 기본 공식
+            # ==================================================
+            else:
+                trate_val = (
+                        (order_qty_after - prev_residue + today_residue)
+                        * 100
+                        / production_plan
+                )
+
+            trate_text = f"{trate_val:.1f}"
+
+        except Exception:
+            return "-", None
+
+        # 🔹 색상 규칙 (공통)
+        trate_color = None
+        try:
+            trate_int = int(float(trate_text))
+            if trate_int < 90 or trate_int >= 100:
+                trate_color = QColor("#cc0000")
+        except:
+            pass
+
+        return trate_text, trate_color
+
+
     #5. 데이터 로딩
     def _load_product_tab(self):
         table = self.ui.tableWidget1
@@ -831,7 +903,7 @@ class OrderDashboardWidget(QWidget):
 
         # 🔹 업체명 → 품명 → PK 순 정렬
         conn, cur = getdb(DB_NAME)
-        try:
+        try :
             sql = """
                 SELECT
                     A.PK, A.co, A.rname, A.uname, A.pkg,
@@ -896,7 +968,7 @@ class OrderDashboardWidget(QWidget):
             produced_qty = int(row.PRODUCED_QTY)
             today_residue = int(row.TODAY_RESIDUE)
             production_plan = int(row.PRODUCTION_PLAN)
-            
+
             # 🔹 최근출고 시각 포맷팅
             recent_chulgo_val = row.RECENT_CHULGO
             shipment_time_str = "-"
@@ -907,7 +979,7 @@ class OrderDashboardWidget(QWidget):
                          shipment_time_str = s_val[11:16] # "yyyy-mm-dd HH:MM..."
                 except:
                     pass
-            
+
 
 
             # 계산 필드
@@ -919,11 +991,15 @@ class OrderDashboardWidget(QWidget):
             plan_kg = plan_qty * pkg
 
             # 🔵 수율 계산
-            if production_plan > 0:
-                trate_value = (order_qty_after - prev_residue + today_residue) * 100 / production_plan
-                trate_text = f"{trate_value:.1f}"
-            else:
-                trate_text = "-"
+            trate_text, trate_color = self.calc_trate(
+                co=co_val,
+                order_qty_after=order_qty_after,
+                prev_residue=prev_residue,
+                today_residue=today_residue,
+                production_plan=production_plan,
+                produced_qty=produced_qty,
+                sdate_str=sdate_str,  # 🔥 중요
+            )
 
             # 🔵 수율 색상 조건
             trate_color = None
@@ -993,9 +1069,9 @@ class OrderDashboardWidget(QWidget):
 
         table.blockSignals(False)
         self._apply_column_visibility_rules()
-        
+
         # 🔹 최근출고 컬럼 숨김/표시
-        
+
         # 🔹 최근출고(물류용) 모드: 최근출고 표시, 수율 숨김
         is_logistics_mode = self.ui.ml_check.isChecked()
         table.setColumnHidden(COL_SHIPMENT_TIME, not is_logistics_mode)
@@ -1237,7 +1313,7 @@ class OrderDashboardWidget(QWidget):
         try:
             sql = """
                 SELECT
-                    PK, rname, uname, pkg,
+                    PK, co, rname, uname, pkg,
                     order_qty, order_qty_after,
                     prev_residue, production_plan, produced_qty,
                     today_residue, recent_chulgo
@@ -1254,6 +1330,13 @@ class OrderDashboardWidget(QWidget):
         r = pd.DataFrame(df)
         r.columns = [str(c).upper() for c in r.columns]
         r = r.iloc[0]
+
+        # 🔹 날짜 문자열
+        qdate: QDate = self.ui.dateEdit.date()
+        sdate_str = qdate.toString("yyyy-MM-dd")
+
+        # 🔹 품목코드
+        co_val = str(r.get("CO", "") or "").strip()
 
         # -------------------------
         # 계산값 정의
@@ -1279,11 +1362,15 @@ class OrderDashboardWidget(QWidget):
         # 🔥 trate 계산 (수율)
         # (최종발주량 - 전일잔피 + 당일잔피) * 100 / 생산계획
         # -------------------------
-        if production_plan > 0:
-            trate_value = (order_qty_after - prev_residue + today_residue) * 100 / production_plan
-            trate_text = f"{trate_value:.2f}"
-        else:
-            trate_text = "-"
+        trate_text, trate_color = self.calc_trate(
+            co=co_val,
+            order_qty_after=order_qty_after,
+            prev_residue=prev_residue,
+            today_residue=today_residue,
+            production_plan=production_plan,
+            produced_qty=produced_qty,
+            sdate_str=sdate_str,  # 🔥 중요
+        )
 
         # -------------------------
         # 🔥 work_status 자동 계산
@@ -1578,7 +1665,7 @@ class OrderDashboardWidget(QWidget):
                 row = item.row()
                 u_item = self.ui.tableWidget1.item(row, COL_PRODUCT)
                 uname = u_item.text() if u_item else "-"
-                
+
                 label_map = {
                     "production_plan": "생산계획",
                     "today_residue": "당일잔피",
@@ -1586,7 +1673,7 @@ class OrderDashboardWidget(QWidget):
                 }
                 lbl = label_map.get(field_name, field_name)
                 content = f"{lbl} {old_val} -> {new_val}"
-                
+
                 DashboardLogDialog.log_change(CURRENT_USER, self.ui.dateEdit.date(), uname, content, "")
 
         finally:
@@ -1651,7 +1738,7 @@ class OrderDashboardWidget(QWidget):
                 changed_content.append(f"선생산 {old_vals.get('prepro_qty')}->{prepro}")
             if old_vals.get("ipgo_qty", -999) != incoming:
                 changed_content.append(f"입고 {old_vals.get('ipgo_qty')}->{incoming}")
-            
+
             if changed_content:
                 u_item = table.item(row, 0)
                 uname = u_item.text() if u_item else "-"
@@ -1718,7 +1805,7 @@ class OrderDashboardWidget(QWidget):
                 changed_content.append(f"선생산 {old_vals.get('prepro_qty')}->{prepro}")
             if old_vals.get("ipgo_qty", -999) != incoming:
                 changed_content.append(f"입고 {old_vals.get('ipgo_qty')}->{incoming}")
-            
+
             if changed_content:
                 u_item = table.item(row, 0)
                 uname = u_item.text() if u_item else "-"
@@ -1785,7 +1872,7 @@ class OrderDashboardWidget(QWidget):
                 changed_content.append(f"선생산 {old_vals.get('prepro_qty')}->{prepro}")
             if old_vals.get("ipgo_qty", -999) != incoming:
                 changed_content.append(f"입고 {old_vals.get('ipgo_qty')}->{incoming}")
-            
+
             if changed_content:
                 u_item = table.item(row, 0)
                 uname = u_item.text() if u_item else "-"
@@ -2174,7 +2261,7 @@ class OrderDashboardWidget(QWidget):
                     pacsu=pacsu,
                 )
 
-                produced_qty = get_produced_qty_packs(base_co, sdate_str, pacsu)
+                produced_qty_val, produced_time = get_produced_qty_packs(base_co, sdate_str, pacsu)
 
                 rows.append({
                     "bigo": "",
@@ -2189,7 +2276,7 @@ class OrderDashboardWidget(QWidget):
                     "order_qty_after": order_qty_packs,
                     "prev_residue": prev_residue,
                     "production_plan": 0,
-                    "produced_qty": produced_qty,
+                    "produced_qty": produced_qty_val,
                     "today_residue": 0,
                 })
 
@@ -2413,7 +2500,7 @@ class OrderDashboardWidget(QWidget):
             return
 
         QMessageBox.information(self, "완료", "선택한 제품이 삭제되었으며 재집계가 완료되었습니다.")
-        
+
         # 📝 로그 기록
         DashboardLogDialog.log_action(CURRENT_USER, self.ui.dateEdit.date(), f"선택 행 삭제 ({len(uname_final_list)}건)")
 
