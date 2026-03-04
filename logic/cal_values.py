@@ -233,7 +233,7 @@ COSTCO_META = {
 
 def get_costco_order_qty(base_co: str, sdate_str: str) -> int:
     """
-    Costco 발주량 계산 (DEBUG 버전)
+    Costco 발주량 계산
     """
 
     print("\n==========[COSTCO DEBUG START]============")
@@ -1027,3 +1027,50 @@ def recalc_dashboard_vege_keep_manual(qdate):
                 )
     finally:
         closedb(conn)
+
+
+# -----------------------------------------------------
+# 수율(trate) 계산
+# -----------------------------------------------------
+def calc_trate_value(
+    *,
+    co: str,
+    order_qty_after: int,
+    prev_residue: int,
+    today_residue: int,
+    production_plan: int,
+    sdate_str: str,
+) -> float | None:
+    """
+    수율 값 계산. production_plan <= 0이면 None 반환.
+    co == '502415' 인 경우 511540 품목의 최종발주량을 가산하는 특수 로직 포함.
+    """
+    if production_plan <= 0:
+        return None
+
+    co = str(co).strip()
+
+    try:
+        if co == "502415":
+            conn, cur = getdb(DB_NAME)
+            try:
+                df = runquery(
+                    cur,
+                    """
+                    SELECT ISNULL(SUM(order_qty_after), 0) AS qty
+                    FROM ORDER_DASHBOARD
+                    WHERE CONVERT(DATE, sdate) = %s
+                      AND co = %s
+                    """,
+                    [sdate_str, "511540"],
+                )
+                other_qty = int(df.iloc[0]["qty"]) if df is not None and not df.empty else 0
+            finally:
+                closedb(conn)
+
+            x = order_qty_after + int(other_qty / 2)
+            return (x - prev_residue + today_residue) * 100 / production_plan
+        else:
+            return (order_qty_after - prev_residue + today_residue) * 100 / production_plan
+    except Exception:
+        return None
