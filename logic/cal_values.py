@@ -3,10 +3,9 @@
 # OrderDashboardWidget 에서 #7. DB 조회/계산 헬퍼 함수 분리 버전
 # -----------------------------------------------------
 
-from datetime import datetime
-
-# 🔥 기존 프로젝트에서 이미 존재한다고 가정
+from datetime import datetime, timedelta
 from UTIL.db_handler import getdb, runquery, closedb
+import pandas as pd
 DB_NAME = "GP"
 
 
@@ -21,6 +20,7 @@ def get_homeplus_order_qty(co: str, sdate_str: str) -> int:
             FROM PAN
             WHERE CO = %s
               AND CONVERT(DATE, PDATE) = %s
+              AND DE = 'N'
         """
         df = runquery(cur, sql, [co, sdate_str])
     finally:
@@ -59,6 +59,7 @@ def get_emart_order_qty(tco: str, sdate_str: str) -> int:
             FROM MPAN
             WHERE CO = %s
               AND CONVERT(DATE, SDATE) = %s
+              AND DE = 'N'
         """
         df = runquery(cur, sql, [real_co, sdate_str])
     finally:
@@ -92,13 +93,24 @@ def get_kurly_order_qty(tco: str, sdate_str: str) -> int:
         if not real_co:
             return 0
 
+        # 토요일(5)이면 다음날(일요일) 데이터 조회
+        query_date_str = sdate_str
+        try:
+            dt = datetime.strptime(sdate_str, "%Y-%m-%d")
+            if dt.weekday() == 5:
+                dt_next = dt + timedelta(days=1)
+                query_date_str = dt_next.strftime("%Y-%m-%d")
+        except:
+            pass
+
         sql = """
             SELECT SUM(PANKG) AS sum_pan
             FROM MPAN
             WHERE CO = %s
               AND CONVERT(DATE, SDATE) = %s
+              AND DE = 'N'
         """
-        df = runquery(cur, sql, [real_co, sdate_str])
+        df = runquery(cur, sql, [real_co, query_date_str])
     finally:
         closedb(conn)
 
@@ -109,6 +121,62 @@ def get_kurly_order_qty(tco: str, sdate_str: str) -> int:
         return int(df.iloc[0, 0] or 0)
     except:
         return 0
+
+
+# -----------------------------------------------------
+# 롯데 발주량 조회
+# -----------------------------------------------------
+def get_lotte_order_qty(co: str, sdate_str: str) -> int:
+    """
+    롯데 양념육 발주량 조회
+    1. MJEN 테이블에서 rname='롯데', JBIGO='양념육', sdate 조건으로 JNO 리스트 추출
+    2. MPAN 테이블에서 해당 JNO와 CO로 발주량 조회
+    """
+    conn, cur = getdb("GFOOD_B")
+    try:
+        # 1단계: MJEN에서 JNO 리스트 추출
+        sql_jno = """
+            SELECT JNO
+            FROM MJEN
+            WHERE rname LIKE '%롯데%'
+              AND JBIGO = '양념육'
+              AND CONVERT(DATE, SDATE) = %s
+              AND DE = 'N'
+        """
+        df_jno = runquery(cur, sql_jno, [sdate_str])
+        
+        if df_jno is None or df_jno.empty:
+            return 0
+        
+        # JNO 리스트 추출
+        jno_list = [str(row['JNO']).strip() for _, row in df_jno.iterrows()]
+        
+        if not jno_list:
+            return 0
+        
+        # 2단계: MPAN에서 해당 JNO와 CO로 발주량 조회
+        placeholders = ','.join(['%s'] * len(jno_list))
+        sql_mpan = f"""
+            SELECT SUM(PANKG) AS sum_pan
+            FROM MPAN
+            WHERE JNO IN ({placeholders})
+              AND CO = %s
+              AND DE = 'N'
+        """
+        params = jno_list + [co]
+        df_pan = runquery(cur, sql_mpan, params)
+        
+    finally:
+        closedb(conn)
+    
+    if df_pan is None or df_pan.empty:
+        return 0
+    
+    try:
+        return int(df_pan.iloc[0, 0] or 0)
+    except:
+        return 0
+
 
 
 # -----------------------------------------------------
@@ -149,10 +217,6 @@ def get_coson_order_qty(base_co: str, sdate_str: str) -> int:
         return int(df.iloc[0, 0] or 0)
     except:
         return 0
-
-import pandas as pd
-from datetime import datetime, timedelta
-from UTIL.db_handler import getdb, runquery, closedb
 
 
 # ------------------------------
@@ -555,6 +619,10 @@ def calc_order_qty_packs(base_co: str, vendor: str, sdate_str: str, pacsu: int) 
 
     if vendor == "마켓컬리":
         return get_kurly_order_qty(base_co, sdate_str)
+    
+    if vendor == "롯데":
+        packs = get_lotte_order_qty(base_co, sdate_str)
+        return packs * pacsu
 
     if vendor == "코스온":
         return get_coson_order_qty(base_co, sdate_str)

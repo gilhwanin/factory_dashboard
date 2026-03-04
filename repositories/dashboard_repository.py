@@ -1,6 +1,6 @@
 from datetime import datetime
 from UTIL.db_handler import getdb, runquery, closedb
-from config import DB_NAME
+from UTIL.const import DB_NAME
 
 class DashboardRepository:
     def __init__(self):

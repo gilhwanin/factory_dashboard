@@ -1,67 +1,94 @@
-import pandas as pd
+# pan_rno_update_from_mwnum.py
+
 from UTIL.db_handler import getdb, runquery, closedb
 
 
-def get_item_summary_by_date(target_date: str, code_list=None):
+def fetch_pan_rows(cur):
+    query = """
+    SELECT PKEY, BIGO
+    FROM PAN
+    WHERE ddate = %s
+      AND RNAME LIKE %s
+      AND (RNO IS NULL OR RNO = '')
+      AND BIGO NOT LIKE %s
     """
-    COS_B 기반, C06 기준 품목(C10)별 총 C17 집계
-    + C29 리스트 필터 추가
-    """
-    if code_list is None:
-        code_list = []
+    params = ('2026-01-27', '%롯데마트%', '%증평%')
+    df = runquery(cur, query, params)
+    return df
 
-    conn, cur = getdb("GWCHUL")
+
+def process_bigo(bigo: str) -> str:
+    if not bigo:
+        return ""
+    return bigo.split('(')[0].strip()
+
+
+def fetch_mwnum(cur, processed_bigo: str):
+    query = """
+    SELECT TOP 1 MWNUM
+    FROM MWNUM
+    WHERE BIGO = %s
+    """
+    df = runquery(cur, query, (processed_bigo,))
+    if df.empty:
+        return None
+    return df.iloc[0]["MWNUM"]
+
+
+def update_pan_rno(cur, pkey: int, mwnum: str):
+    query = """
+    UPDATE PAN
+       SET RNO = %s
+     WHERE PKEY = %s
+    """
+    runquery(cur, query, (mwnum, pkey))
+
+
+def main():
+    conn, cur = getdb("GYUN_N")
+    if not conn:
+        print("❌ DB 연결 실패")
+        return
 
     try:
-        # ------------------------------
-        # C29 조건 생성
-        # ------------------------------
-        code_filter_sql = ""
-        params = [target_date]
+        print("✅ DB 연결 성공")
 
-        if len(code_list) > 0:
-            placeholders = ",".join(["%s"] * len(code_list))
-            code_filter_sql = f" AND A.C29 IN ({placeholders}) "
-            params += code_list
+        pan_df = fetch_pan_rows(cur)
 
-        # ------------------------------
-        # 최종 SQL
-        # ------------------------------
-        sql = f"""
-            SELECT 
-                A.C10 AS item_name,
-                SUM(CONVERT(int, A.C17)) AS total_pack,  
-                B.PS AS ps_unit
-            FROM COS_B A
-                LEFT JOIN COS_M B ON A.C11 = B.CCO
-                LEFT JOIN MASTER C ON B.JICO = C.CO
-            WHERE A.C06 = %s
-              {code_filter_sql}
-            GROUP BY A.C10, B.PS
-            ORDER BY A.C10
-        """
+        if pan_df.empty:
+            print("조회된 PAN 데이터 없음")
+            return
 
-        df = runquery(cur, sql, params)
+        total = len(pan_df)
+        updated = 0
+        skipped = 0
+
+        print("\n===== PAN → MWNUM 매칭 및 RNO 업데이트 시작 =====")
+
+        for _, row in pan_df.iterrows():
+            pkey = row["PKEY"]
+            bigo = row["BIGO"]
+
+            processed = process_bigo(bigo)
+            mwnum = fetch_mwnum(cur, processed)
+
+            if not mwnum:
+                print(f"[SKIP] PKEY={pkey} | BIGO='{bigo}' → MWNUM 없음")
+                skipped += 1
+                continue
+
+            update_pan_rno(cur, pkey, mwnum)
+            print(f"[OK] PKEY={pkey} | BIGO='{bigo}' → RNO = {mwnum}")
+            updated += 1
+
+        print("\n===== 처리 완료 =====")
+        print(f"총 대상 건수 : {total}")
+        print(f"업데이트 완료 : {updated}")
+        print(f"스킵(MWNUM 없음) : {skipped}")
 
     finally:
         closedb(conn)
 
-    if df is None or df.empty:
-        print("데이터 없음")
-        return pd.DataFrame()
 
-    # numeric 변환
-    df["ps_unit"] = pd.to_numeric(df["ps_unit"], errors="coerce").fillna(0).astype(int)
-    df["total_pack"] = pd.to_numeric(df["total_pack"], errors="coerce").fillna(0).astype(int)
-
-    # BOX 계산
-    df["TOTAL_BOX"] = df.apply(
-        lambda row: int(row["total_pack"] / row["ps_unit"]) if row["ps_unit"] > 0 else 0,
-        axis=1
-    )
-
-    return df
-
-codes = ["501998"]
-df = get_item_summary_by_date("2025-12-05", codes)
-print(df)
+if __name__ == "__main__":
+    main()

@@ -16,7 +16,7 @@ from PyQt5.QtWidgets import (
 from UTIL.db_handler import getdb, runquery, closedb
 from UTIL.utils_qt import apply_table_style
 
-VENDOR_CHOICES = ["코스온", "이마트", "홈플러스", "마켓컬리"]
+VENDOR_CHOICES = ["코스온", "이마트", "홈플러스", "마켓컬리", "롯데"]
 
 class MasterSearchDialog(QDialog):
     """

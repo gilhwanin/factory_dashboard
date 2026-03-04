@@ -16,19 +16,24 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtGui import QBrush, QColor, QFont
 
+from datetime import datetime, timedelta
 from UTIL.db_handler import getdb, runquery, closedb
 from ci_cd.updatedown import check_version_and_update
 from UTIL.util import fmt
 from logic.cal_values import *
-from config import PRODUCT_LIST, VENDOR_CHOICES
+from UTIL.const import (
+    COL_VENDOR, COL_PRODUCT, COL_DEADLINE, COL_PKG,
+    COL_ORDER, COL_FINAL_ORDER, COL_DIFF, COL_PREV_RES,
+    COL_PRODUCTION, COL_PLAN, COL_PLAN_KG, COL_CUR_PROD,
+    COL_SHIPMENT_TIME, COL_TODAY_RES, COL_TRATE, COL_WORK_STATUS
+)
 
 from UI.dashboard import Ui_Form
-
 from dialog.DashboardLogDialog import DashboardLogDialog
 from dialog.ProductListDialog import ProductListDialog
 from dialog.ProductNameDialog import ProductNameDialog
 
-CURRENT_VERSION = "a-0028"
+CURRENT_VERSION = "a-0031"
 PROGRAM_NAME = "factory_dashboard"
 
 DB_NAME = "GP"
@@ -37,24 +42,8 @@ CURRENT_USER = None  # 선택
 
 
 # ---------------------------------------------------------
-# 컬럼 인덱스
+# 컬럼 인덱스 (Imported from UTIL.const)
 # ---------------------------------------------------------
-COL_VENDOR = 0
-COL_PRODUCT = 1
-COL_DEADLINE = 2
-COL_PKG = 3
-COL_ORDER = 4
-COL_FINAL_ORDER = 5
-COL_DIFF = 6
-COL_PREV_RES = 7
-COL_PRODUCTION = 8
-COL_PLAN = 9
-COL_PLAN_KG = 10
-COL_CUR_PROD = 11
-COL_SHIPMENT_TIME = 12  # 🔹 새로 추가
-COL_TODAY_RES = 13
-COL_TRATE = 14
-COL_WORK_STATUS = 15
 
 class OrderDashboardWidget(QWidget):
 
@@ -63,9 +52,6 @@ class OrderDashboardWidget(QWidget):
         super().__init__(parent)
         self.ui = Ui_Form()
         self.ui.setupUi(self)
-
-        # 🔹 제품 리스트 상태 (프로그램 실행 동안 유지)
-        self.product_list = list(PRODUCT_LIST)
 
         # 🔹 현재 선택된 업체 (기본값: 코스트코)
         self.current_vendor = "코스트코"
@@ -77,7 +63,11 @@ class OrderDashboardWidget(QWidget):
 
         # 날짜 설정
         self.ui.dateEdit.setDate(QDate.currentDate())
-        self.ui.dateText.setText(self.ui.dateEdit.date().toString("yyyy-MM-dd"))
+        qdate = self.ui.dateEdit.date()
+        date_str = qdate.toString("yyyy-MM-dd")
+        weekday_str = qdate.toString("ddd")
+
+        self.ui.dateText.setText(f"{date_str} ({weekday_str})")
 
         # 변경 이벤트 플래그
         self._product_table_item_changed_connected = False
@@ -99,7 +89,7 @@ class OrderDashboardWidget(QWidget):
         # 🔹 타이머 설정 (화면 전환/갱신용)
         # -----------------------------
         self.is_auto_rotation = False  # True: 자동전환 모드, False: 화면고정 모드
-        self.vendors_rotation = ["코스트코", "이마트", "홈플러스", "마켓컬리"]
+        self.vendors_rotation = ["코스트코", "이마트", "홈플/컬리"]
         self.rotation_index = 0
 
         self.timer_view = QTimer(self)
@@ -129,8 +119,8 @@ class OrderDashboardWidget(QWidget):
         # 업체 필터 버튼 연결
         self.ui.btn_costco.clicked.connect(self.on_click_filter_costco)
         self.ui.btn_emart.clicked.connect(self.on_click_filter_emart)
-        self.ui.btn_homeplus.clicked.connect(self.on_click_filter_homeplus)
-        self.ui.btn_kurly.clicked.connect(self.on_click_filter_kurly)
+        self.ui.btn_homeplus.clicked.connect(self.on_click_filter_hk)
+        self.ui.btn_lotte.clicked.connect(self.on_click_filter_lotte)
 
         self.ui.btn_add.clicked.connect(self.on_click_add_dummy_rows)
         self.ui.btn_del.clicked.connect(self.on_click_delete_rows)
@@ -376,8 +366,11 @@ class OrderDashboardWidget(QWidget):
     def on_date_changed(self):
         # 날짜 텍스트 갱신
         qdate = self.ui.dateEdit.date()
+
         date_str = qdate.toString("yyyy-MM-dd")
-        self.ui.dateText.setText(date_str)
+        weekday_str = qdate.toString("ddd")  # 월, 화, 수 ...
+
+        self.ui.dateText.setText(f"{date_str} ({weekday_str})")
 
         # 탭별 데이터 로딩
         idx = self.ui.tabWidget.currentIndex()
@@ -411,6 +404,9 @@ class OrderDashboardWidget(QWidget):
             self._load_sauce_tab()
         elif idx == 3:
             self._load_vege_tab()
+
+
+
 
 
     # ---------------------------------------------------------
@@ -503,11 +499,11 @@ class OrderDashboardWidget(QWidget):
     def on_click_filter_emart(self):
         self._change_vendor_filter("이마트")
 
-    def on_click_filter_homeplus(self):
-        self._change_vendor_filter("홈플러스")
+    def on_click_filter_hk(self):
+        self._change_vendor_filter("홈플/컬리")
 
-    def on_click_filter_kurly(self):
-        self._change_vendor_filter("마켓컬리")
+    def on_click_filter_lotte(self):
+        self._change_vendor_filter("롯데")
 
 
     #4. 테이블 UI 설정 관련
@@ -928,11 +924,15 @@ class OrderDashboardWidget(QWidget):
             # 🔹 업체별 필터링
             if self.current_vendor == "코스트코":
                 sql += " AND A.rname IN ('코스트코', '코스온')"
+
+            elif self.current_vendor == "홈플/컬리":
+                sql += " AND A.rname IN ('홈플러스', '마켓컬리')"
+
             else:
                 sql += " AND A.rname = %s"
                 params.append(self.current_vendor)
 
-            sql += " ORDER BY A.PK"
+            sql += " ORDER BY A.RNAME DESC, A.PK"
 
             df = runquery(cur, sql, params)
         finally:
@@ -1069,8 +1069,6 @@ class OrderDashboardWidget(QWidget):
 
         table.blockSignals(False)
         self._apply_column_visibility_rules()
-
-        # 🔹 최근출고 컬럼 숨김/표시
 
         # 🔹 최근출고(물류용) 모드: 최근출고 표시, 수율 숨김
         is_logistics_mode = self.ui.ml_check.isChecked()
@@ -2186,7 +2184,7 @@ class OrderDashboardWidget(QWidget):
     #9. DB Insert/Update/Delete
     def on_click_add_dummy_rows(self):
         # 1) 제품 리스트 관리창 먼저 띄우기
-        dlg = ProductListDialog(self, self.product_list)
+        dlg = ProductListDialog(self)
         if dlg.exec_() != QDialog.Accepted:
             # 취소 누르면 아무 것도 안 함
             return
@@ -2686,7 +2684,7 @@ class OrderDashboardWidget(QWidget):
         qdate: QDate = self.ui.dateEdit.date()
         sdate_str = qdate.toString("yyyy-MM-dd")
 
-        if not PRODUCT_LIST:
+        if not self.PRODUCT_LIST:
             if not silent:
                 QMessageBox.information(self, "안내", "PRODUCT_LIST가 비어 있습니다.")
             else:
@@ -2695,7 +2693,7 @@ class OrderDashboardWidget(QWidget):
 
         conn, cur = getdb(DB_NAME)
         try:
-            for base_co, vendor in PRODUCT_LIST:
+            for base_co, vendor in self.PRODUCT_LIST:
                 base_co = str(base_co).strip()
 
                 # PACSU 조회 (박스 → 팩 환산기)
@@ -2836,8 +2834,8 @@ class OrderDashboardWidget(QWidget):
         vendor_buttons = {
             "코스트코": self.on_click_filter_costco,
             "이마트": self.on_click_filter_emart,
-            "홈플러스": self.on_click_filter_homeplus,
-            "마켓컬리": self.on_click_filter_kurly,
+            "홈플/컬리": self.on_click_filter_hk,
+            "롯데": self.on_click_filter_lotte,
         }
 
         vendors = list(vendor_buttons.keys())

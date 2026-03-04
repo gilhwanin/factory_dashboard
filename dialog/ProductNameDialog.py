@@ -7,7 +7,7 @@ from PyQt5.QtCore import Qt
 from UTIL.db_handler import getdb, runquery, closedb
 
 # 업체 목록
-RETAILERS = ["코스트코", "이마트", "홈플러스", "마켓컬리"]
+RETAILERS = ["코스트코", "이마트", "홈플러스", "마켓컬리", "롯데"]
 
 
 # -----------------------------

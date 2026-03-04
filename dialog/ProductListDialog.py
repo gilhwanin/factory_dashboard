@@ -7,28 +7,30 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QHBoxLayout,
     QPushButton,
+    QLabel,
+    QGroupBox,
 )
 
 from UTIL.db_handler import getdb, runquery, closedb
 from UTIL.utils_qt import apply_table_style
 from dialog.MasterSearchDialog import MasterSearchDialog
-from config import PRODUCT_LIST, VENDOR_CHOICES
+from UTIL.const import VENDOR_CHOICES
+from UTIL.db_product_handler import fetch_default_products, add_default_product, remove_default_product
 
 class ProductListDialog(QDialog):
     """
-    제품 대시보드에 사용할 PRODUCT_LIST를 관리하는 창.
-    - 현재 리스트 표시 (CO, 업체명, UNAME)
-    - 추가 / 삭제 / 기본값으로 되돌리기
+    제품 대시보드 리스트 관리 창
+    - 로컬 리스트 (현재 세션용): 자유롭게 추가/삭제/초기화
+    - DB 기본값 (영구 저장용): 별도 버튼으로 DB에 추가/삭제
     """
 
-    def __init__(self, parent, product_list):
+    def __init__(self, parent):
         super().__init__(parent)
         self.setWindowTitle("제품 리스트 관리")
-        self.resize(700, 400)
-
-        # 디폴트 / 현재 리스트
-        self._default_list = list(PRODUCT_LIST)
-        self._product_list = list(product_list)
+        self.resize(800, 500)
+        
+        # 만약 비어 있으면 DB에서 로드 (최초 실행 시 등)
+        self._product_list = fetch_default_products()
 
         main_layout = QVBoxLayout(self)
 
@@ -41,29 +43,50 @@ class ProductListDialog(QDialog):
         self.table.setSelectionBehavior(QTableWidget.SelectRows)
         self.table.setEditTriggers(QTableWidget.NoEditTriggers)
 
-        # 🔹 테이블 스타일 적용
+        # 스타일 적용
         apply_table_style(self.table)
-
         main_layout.addWidget(self.table)
 
         # -------------------
-        # 버튼
+        # 로컬 관리 버튼 (현재 리스트)
         # -------------------
-        btn_layout = QHBoxLayout()
+        local_group = QGroupBox("현재 리스트 편집 (프로그램 종료 시 초기화됨)")
+        local_layout = QHBoxLayout()
+        
         self.btn_add = QPushButton("추가")
         self.btn_remove = QPushButton("삭제")
-        self.btn_reset = QPushButton("기본값으로 되돌리기")
+        self.btn_reset = QPushButton("기본리스트 초기화") # DB에서 재조회
+        
+        local_layout.addWidget(self.btn_add)
+        local_layout.addWidget(self.btn_remove)
+        local_layout.addWidget(self.btn_reset)
+        local_layout.addStretch()
+        local_group.setLayout(local_layout)
+        
+        main_layout.addWidget(local_group)
 
-        btn_layout.addWidget(self.btn_add)
-        btn_layout.addWidget(self.btn_remove)
-        btn_layout.addWidget(self.btn_reset)
-        btn_layout.addStretch()
-        main_layout.addLayout(btn_layout)
+        # -------------------
+        # DB 관리 버튼 (기본값)
+        # -------------------
+        db_group = QGroupBox("기본값 관리 (영구 저장 - DB)")
+        db_layout = QHBoxLayout()
+        
+        self.btn_db_add = QPushButton("기본값에 추가")
+        self.btn_db_remove = QPushButton("기본값에 삭제")
+        
+        db_layout.addWidget(self.btn_db_add)
+        db_layout.addWidget(self.btn_db_remove)
+        db_layout.addStretch()
+        db_group.setLayout(db_layout)
+        
+        main_layout.addWidget(db_group)
 
-        # 확인/취소
+        # -------------------
+        # 하단 확인/취소
+        # -------------------
         bottom_layout = QHBoxLayout()
         bottom_layout.addStretch()
-        self.btn_ok = QPushButton("확인")
+        self.btn_ok = QPushButton("적용")
         self.btn_cancel = QPushButton("취소")
         bottom_layout.addWidget(self.btn_ok)
         bottom_layout.addWidget(self.btn_cancel)
@@ -73,6 +96,10 @@ class ProductListDialog(QDialog):
         self.btn_add.clicked.connect(self.on_add)
         self.btn_remove.clicked.connect(self.on_remove)
         self.btn_reset.clicked.connect(self.on_reset)
+        
+        self.btn_db_add.clicked.connect(self.on_db_add)
+        self.btn_db_remove.clicked.connect(self.on_db_remove)
+        
         self.btn_ok.clicked.connect(self.accept)
         self.btn_cancel.clicked.connect(self.reject)
 
@@ -108,7 +135,7 @@ class ProductListDialog(QDialog):
         return result
 
     # -----------------------------------------------------
-    # 테이블 리로드
+    # 테이블 리로드 (로컬 리스트 기준)
     # -----------------------------------------------------
     def _reload_table(self):
         self.table.setRowCount(0)
@@ -116,7 +143,10 @@ class ProductListDialog(QDialog):
         cos = sorted({co for co, _ in self._product_list})
         uname_map = self._fetch_uname_map(cos)
 
-        for co, vendor in self._product_list:
+        # 리스트 정렬
+        sorted_list = sorted(self._product_list, key=lambda x: (x[1], x[0]))
+
+        for co, vendor in sorted_list:
             row = self.table.rowCount()
             self.table.insertRow(row)
             self.table.setItem(row, 0, QTableWidgetItem(str(co)))
@@ -124,31 +154,93 @@ class ProductListDialog(QDialog):
             self.table.setItem(row, 2, QTableWidgetItem(uname_map.get(str(co), "")))
 
     # -----------------------------------------------------
-    # 버튼 핸들러들
+    # 로컬 핸들러
     # -----------------------------------------------------
     def on_add(self):
+        """[추가] MasterSearchDialog를 띄워 로컬 리스트에 품목 추가"""
         dlg = MasterSearchDialog(self)
         if dlg.exec_() == QDialog.Accepted and dlg.selected_co:
             key = (dlg.selected_co, dlg.selected_vendor)
+            
             if key in self._product_list:
-                QMessageBox.information(self, "안내", "이미 존재하는 항목입니다.")
+                QMessageBox.information(self, "안내", "현재 리스트에 이미 존재합니다.")
                 return
-
+            
             self._product_list.append(key)
             self._reload_table()
 
     def on_remove(self):
+        """[삭제] 로컬 리스트에서 선택된 행 삭제"""
         rows = sorted({idx.row() for idx in self.table.selectedIndexes()}, reverse=True)
+        if not rows:
+            QMessageBox.information(self, "안내", "삭제할 항목을 선택해주세요.")
+            return
+
         for r in rows:
             co = self.table.item(r, 0).text()
             vendor = self.table.item(r, 1).text()
             if (co, vendor) in self._product_list:
                 self._product_list.remove((co, vendor))
-            self.table.removeRow(r)
+        
+        self._reload_table()
 
     def on_reset(self):
-        self._product_list = list(self._default_list)
-        self._reload_table()
+        """[기본리스트 초기화] DB에서 재조회하여 로컬 리스트 초기화"""
+        if QMessageBox.question(self, "확인", "DB 기본값으로 현재 리스트를 초기화하시겠습니까?", QMessageBox.Yes | QMessageBox.No) == QMessageBox.Yes:
+            self._product_list = fetch_default_products()
+            self._reload_table()
+            QMessageBox.information(self, "완료", "초기화되었습니다.")
+
+    # -----------------------------------------------------
+    # DB 핸들러
+    # -----------------------------------------------------
+    def on_db_add(self):
+        """[기본값에 추가] MasterSearchDialog 띄워 DB에 추가"""
+        dlg = MasterSearchDialog(self)
+        if dlg.exec_() == QDialog.Accepted and dlg.selected_co:
+            co = dlg.selected_co
+            vendor = dlg.selected_vendor
+            
+            # DB 추가
+            add_default_product(co, vendor)
+            QMessageBox.information(self, "완료", f"DB 기본값에 추가되었습니다.\n({co}, {vendor})")
+            
+            # (옵션) 로컬 리스트에도 없으면 추가해줄까? 사용자가 원할 수 있음.
+            # 요구사항엔 명시 안되어있지만 편의상 추가 여부를 물어보거나 자동 추가 등 가능.
+            # 일단 요구사항대로 DB만 처리하고, 사용자가 리셋 누르면 반영되도록 둠.
+
+    def on_db_remove(self):
+        """[기본값에 삭제] 선택된 품목들을 DB에서 삭제"""
+        rows = sorted({idx.row() for idx in self.table.selectedIndexes()})
+        if not rows:
+            QMessageBox.information(self, "안내", "DB에서 삭제할 항목을 선택해주세요.")
+            return
+
+        if QMessageBox.question(self, "확인", "선택한 항목을 DB(기본값)에서 영구 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No) == QMessageBox.No:
+            return
+
+        # 현재 DB에 있는 목록 조회하여 비교
+        current_db_list = fetch_default_products() # List of (co, retailer)
+        
+        success_count = 0
+        not_found_count = 0
+        
+        for r in rows:
+            co = self.table.item(r, 0).text()
+            vendor = self.table.item(r, 1).text()
+            
+            if (co, vendor) in current_db_list:
+                remove_default_product(co, vendor)
+                success_count += 1
+            else:
+                not_found_count += 1
+        
+        msg = f"{success_count}건이 DB에서 삭제되었습니다."
+        if not_found_count > 0:
+            msg += f"\n\n[주의] {not_found_count}건은 DB에 존재하지 않아 삭제되지 않았습니다."
+            QMessageBox.warning(self, "완료 (일부 실패)", msg)
+        else:
+            QMessageBox.information(self, "완료", msg)
 
     def get_product_list(self):
         return list(self._product_list)

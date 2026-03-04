@@ -422,17 +422,17 @@ class Ui_Form(object):
 "")
         self.btn_homeplus.setObjectName("btn_homeplus")
         self.horizontalLayout_5.addWidget(self.btn_homeplus)
-        self.btn_kurly = QtWidgets.QPushButton(self.view_frame2)
+        self.btn_lotte = QtWidgets.QPushButton(self.view_frame2)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.btn_kurly.sizePolicy().hasHeightForWidth())
-        self.btn_kurly.setSizePolicy(sizePolicy)
+        sizePolicy.setHeightForWidth(self.btn_lotte.sizePolicy().hasHeightForWidth())
+        self.btn_lotte.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Noto Sans KR Medium")
         font.setPointSize(16)
-        self.btn_kurly.setFont(font)
-        self.btn_kurly.setStyleSheet("QPushButton {\n"
+        self.btn_lotte.setFont(font)
+        self.btn_lotte.setStyleSheet("QPushButton {\n"
 "    background-color: #d9f1e7;\n"
 "    border: 1px solid #94c5ad;\n"
 "    padding: 6px 12px;\n"
@@ -445,8 +445,8 @@ class Ui_Form(object):
 "QPushButton:pressed {\n"
 "    background-color: #c0dfd3;\n"
 "}")
-        self.btn_kurly.setObjectName("btn_kurly")
-        self.horizontalLayout_5.addWidget(self.btn_kurly)
+        self.btn_lotte.setObjectName("btn_lotte")
+        self.horizontalLayout_5.addWidget(self.btn_lotte)
         self.verticalLayout_2.addWidget(self.view_frame2)
         self.view_frame = QtWidgets.QFrame(Form)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
@@ -883,8 +883,8 @@ class Ui_Form(object):
         self.btn_next.setText(_translate("Form", "다음일"))
         self.btn_costco.setText(_translate("Form", "코스트코"))
         self.btn_emart.setText(_translate("Form", "이마트"))
-        self.btn_homeplus.setText(_translate("Form", "홈플러스"))
-        self.btn_kurly.setText(_translate("Form", "마켓컬리"))
+        self.btn_homeplus.setText(_translate("Form", "홈플/컬리"))
+        self.btn_lotte.setText(_translate("Form", "롯데"))
         self.label_3.setText(_translate("Form", "화면전환 주기"))
         self.btn_autoPage.setText(_translate("Form", "화면고정"))
         self.btn_show_hide.setText(_translate("Form", "숨김제외"))

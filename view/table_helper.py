@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QTableWidget, QAbstractItemView, QTableWidgetItem, QHeaderView
 from PyQt5.QtGui import QColor, QBrush
 from PyQt5.QtCore import Qt
-from config import COL_PRODUCT, COL_PLAN, COL_TODAY_RES, COL_PREV_RES
+from UTIL.const import COL_PRODUCT, COL_PLAN, COL_TODAY_RES, COL_PREV_RES
 
 def setup_table_base(table: QTableWidget):
     """기본 테이블 스타일 및 설정"""
