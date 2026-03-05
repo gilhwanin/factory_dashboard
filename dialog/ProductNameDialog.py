@@ -80,7 +80,8 @@ class ProductNameDialog(QDialog):
         headers = ["업체", "기존 품명 (Before)", "변경 품명 (After)", "소비기한 (일)"]
         self.table.setColumnCount(len(headers))
         self.table.setHorizontalHeaderLabels(headers)
-        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+        self.table.horizontalHeader().setStretchLastSection(True)
         self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
 
         self.table.setItemDelegateForColumn(0, RetailerDelegate(self.table))

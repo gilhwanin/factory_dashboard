@@ -39,7 +39,8 @@ class ProductListDialog(QDialog):
         # -------------------
         self.table = QTableWidget(0, 3, self)
         self.table.setHorizontalHeaderLabels(["CO", "업체명", "상품명(UNAME)"])
-        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+        self.table.horizontalHeader().setStretchLastSection(True)
         self.table.setSelectionBehavior(QTableWidget.SelectRows)
         self.table.setEditTriggers(QTableWidget.NoEditTriggers)
 

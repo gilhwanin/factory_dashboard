@@ -1790,10 +1790,11 @@ class OrderDashboardWidget(QWidget):
                         rows.append(row_vals)
 
                     df = pd.DataFrame(rows, columns=headers)
-                    df.to_excel(writer, sheet_name=vendor, index=False)
+                    safe_name = vendor.replace("/", "_")
+                    df.to_excel(writer, sheet_name=safe_name, index=False)
 
                     wb = writer.book
-                    ws = wb[vendor]
+                    ws = wb[safe_name]
 
                     header_font = Font(bold=True)
                     header_align = Alignment(horizontal="center", vertical="center")
