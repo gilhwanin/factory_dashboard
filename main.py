@@ -48,7 +48,7 @@ from dialog.ProductListDialog import ProductListDialog
 from dialog.ProductNameDialog import ProductNameDialog
 from UTIL.db_product_handler import fetch_default_products
 
-CURRENT_VERSION = "a-0031"
+CURRENT_VERSION = "a-0032"
 PROGRAM_NAME = "factory_dashboard"
 
 
@@ -77,6 +77,7 @@ class OrderDashboardWidget(QWidget):
         self.product_page = 0
         self.product_page_size = 14
         self.product_total_pages = 1
+        self._lotte_page_labels = []
 
         # 현재 선택된 업체 (기본값: 코스트코)
         self.current_vendor = "코스트코"
@@ -469,7 +470,11 @@ class OrderDashboardWidget(QWidget):
             self.ui.pagination.hide()
             return
         self.ui.pagination.show()
-        self.ui.page_label.setText(f"{self.product_page + 1} / {self.product_total_pages}")
+        if self._lotte_page_labels:
+            cat = self._lotte_page_labels[self.product_page]
+            self.ui.page_label.setText(f"{self.product_page + 1} / {self.product_total_pages} ({cat})")
+        else:
+            self.ui.page_label.setText(f"{self.product_page + 1} / {self.product_total_pages}")
         self.ui.btn_left.setEnabled(self.product_page > 0)
         self.ui.btn_right.setEnabled(self.product_page < self.product_total_pages - 1)
 
@@ -731,13 +736,34 @@ class OrderDashboardWidget(QWidget):
         df.columns = [str(c).upper() for c in df.columns]
 
         # 페이지네이션 적용
-        total_rows = len(df)
-        self.product_total_pages = max(1, ceil(total_rows / self.product_page_size))
-        if self.product_page >= self.product_total_pages:
-            self.product_page = self.product_total_pages - 1
-        start = self.product_page * self.product_page_size
-        end = min(start + self.product_page_size, total_rows)
-        df_page = df.iloc[start:end]
+        if self.current_vendor == "롯데":
+            LOTTE_CATS = ["슈퍼", "마트", "맥스"]
+
+            def _lotte_cat(uname):
+                for cat in LOTTE_CATS:
+                    if cat in str(uname):
+                        return cat
+                return "슈퍼"
+
+            df["_LOTTE_CAT"] = df["UNAME"].apply(_lotte_cat)
+            pages = [(cat, df[df["_LOTTE_CAT"] == cat].drop(columns=["_LOTTE_CAT"]))
+                     for cat in LOTTE_CATS]
+            pages = [(cat, p) for cat, p in pages if not p.empty]
+
+            self.product_total_pages = max(1, len(pages))
+            if self.product_page >= self.product_total_pages:
+                self.product_page = self.product_total_pages - 1
+            self._lotte_page_labels = [cat for cat, _ in pages]
+            df_page = pages[self.product_page][1]
+        else:
+            self._lotte_page_labels = []
+            total_rows = len(df)
+            self.product_total_pages = max(1, ceil(total_rows / self.product_page_size))
+            if self.product_page >= self.product_total_pages:
+                self.product_page = self.product_total_pages - 1
+            start = self.product_page * self.product_page_size
+            end = min(start + self.product_page_size, total_rows)
+            df_page = df.iloc[start:end]
 
         table.setRowCount(len(df_page))
 
