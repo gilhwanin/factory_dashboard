@@ -10,19 +10,36 @@ DB_NAME = "GP"
 
 
 # -----------------------------------------------------
+# 토요일이면 [토, 일] 두 날짜, 그 외에는 [입력일] 단일 리스트 반환
+# (마켓컬리는 별도 처리, 사용 안 함)
+# -----------------------------------------------------
+def _get_query_dates(sdate_str: str) -> list:
+    try:
+        dt = datetime.strptime(sdate_str, "%Y-%m-%d")
+        if dt.weekday() == 5:
+            return [sdate_str, (dt + timedelta(days=1)).strftime("%Y-%m-%d")]
+    except Exception:
+        pass
+    return [sdate_str]
+
+
+# -----------------------------------------------------
 # 홈플러스 발주량 조회
 # -----------------------------------------------------
-def get_homeplus_order_qty(co: str, sdate_str: str) -> int:
+def get_homeplus_order_qty(co: str, sdate_str: str, dates_override: list = None) -> int:
+    date_list = dates_override if dates_override else _get_query_dates(sdate_str)
+    placeholders = ",".join(["%s"] * len(date_list))
+
     conn, cur = getdb("GWCHUL")
     try:
-        sql = """
+        sql = f"""
             SELECT ISNULL(SUM(PAN), 0) AS sum_pan
             FROM PAN
             WHERE CO = %s
-              AND CONVERT(DATE, PDATE) = %s
+              AND CONVERT(DATE, PDATE) IN ({placeholders})
               AND DE = 'N'
         """
-        df = runquery(cur, sql, [co, sdate_str])
+        df = runquery(cur, sql, [co] + date_list)
     finally:
         closedb(conn)
 
@@ -38,7 +55,7 @@ def get_homeplus_order_qty(co: str, sdate_str: str) -> int:
 # -----------------------------------------------------
 # 이마트 발주량 조회
 # -----------------------------------------------------
-def get_emart_order_qty(tco: str, sdate_str: str) -> int:
+def get_emart_order_qty(tco: str, sdate_str: str, dates_override: list = None) -> int:
     conn, cur = getdb("GFOOD_B")
     try:
         sql_key = """
@@ -54,14 +71,17 @@ def get_emart_order_qty(tco: str, sdate_str: str) -> int:
         if not real_co:
             return 0
 
-        sql = """
+        date_list = dates_override if dates_override else _get_query_dates(sdate_str)
+        placeholders = ",".join(["%s"] * len(date_list))
+
+        sql = f"""
             SELECT SUM(PANKG) AS sum_pan
             FROM MPAN
             WHERE CO = %s
-              AND CONVERT(DATE, SDATE) = %s
+              AND CONVERT(DATE, SDATE) IN ({placeholders})
               AND DE = 'N'
         """
-        df = runquery(cur, sql, [real_co, sdate_str])
+        df = runquery(cur, sql, [real_co] + date_list)
     finally:
         closedb(conn)
 
@@ -126,24 +146,27 @@ def get_kurly_order_qty(tco: str, sdate_str: str) -> int:
 # -----------------------------------------------------
 # 롯데 발주량 조회
 # -----------------------------------------------------
-def get_lotte_order_qty(co: str, sdate_str: str) -> int:
+def get_lotte_order_qty(co: str, sdate_str: str, dates_override: list = None) -> int:
     """
     롯데 양념육 발주량 조회
     1. MJEN 테이블에서 rname='롯데', JBIGO='양념육', sdate 조건으로 JNO 리스트 추출
     2. MPAN 테이블에서 해당 JNO와 CO로 발주량 조회
     """
+    date_list = dates_override if dates_override else _get_query_dates(sdate_str)
+    date_placeholders = ",".join(["%s"] * len(date_list))
+
     conn, cur = getdb("GFOOD_B")
     try:
-        # 1단계: MJEN에서 JNO 리스트 추출
-        sql_jno = """
+        # 1단계: MJEN에서 JNO 리스트 추출 (토요일이면 토+일 포함)
+        sql_jno = f"""
             SELECT JNO
             FROM MJEN
             WHERE rname LIKE '%롯데%'
               AND JBIGO = '양념육'
-              AND CONVERT(DATE, SDATE) = %s
+              AND CONVERT(DATE, SDATE) IN ({date_placeholders})
               AND DE = 'N'
         """
-        df_jno = runquery(cur, sql_jno, [sdate_str])
+        df_jno = runquery(cur, sql_jno, date_list)
         
         if df_jno is None or df_jno.empty:
             return 0
@@ -603,25 +626,26 @@ def calc_plan_kg_by_recipe(df_order, recipe_keyword: str, bco_list: list = None)
 # -----------------------------------------------------
 # 벤더별 최종 발주팩 계산 공통 함수
 # -----------------------------------------------------
-def calc_order_qty_packs(base_co: str, vendor: str, sdate_str: str, pacsu: int) -> int:
+def calc_order_qty_packs(base_co: str, vendor: str, sdate_str: str, pacsu: int,
+                         dates_override: list = None) -> int:
     vendor = (vendor or "").strip()
 
     if pacsu is None or pacsu <= 0:
         pacsu = 1
 
     if vendor == "홈플러스":
-        box_qty = get_homeplus_order_qty(base_co, sdate_str)
+        box_qty = get_homeplus_order_qty(base_co, sdate_str, dates_override)
         return box_qty * pacsu
 
     if vendor == "이마트":
-        packs = get_emart_order_qty(base_co, sdate_str)
+        packs = get_emart_order_qty(base_co, sdate_str, dates_override)
         return packs * pacsu
 
     if vendor == "마켓컬리":
         return get_kurly_order_qty(base_co, sdate_str)
-    
+
     if vendor == "롯데":
-        packs = get_lotte_order_qty(base_co, sdate_str)
+        packs = get_lotte_order_qty(base_co, sdate_str, dates_override)
         return packs * pacsu
 
     if vendor == "코스온":

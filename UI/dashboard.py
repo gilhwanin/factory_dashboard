@@ -763,37 +763,40 @@ class Ui_Form(object):
         self.control_frame.setObjectName("control_frame")
         self.horizontalLayout_3 = QtWidgets.QHBoxLayout(self.control_frame)
         self.horizontalLayout_3.setContentsMargins(8, 4, 8, 4)
+        self.horizontalLayout_3.setSpacing(8)
         self.horizontalLayout_3.setObjectName("horizontalLayout_3")
-        self.btn_complete = QtWidgets.QPushButton(self.control_frame)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.btn_complete.sizePolicy().hasHeightForWidth())
-        self.btn_complete.setSizePolicy(sizePolicy)
-        font = QtGui.QFont()
-        font.setFamily("Noto Sans KR Medium")
-        font.setPointSize(16)
-        self.btn_complete.setFont(font)
-        self.btn_complete.setStyleSheet("QPushButton {\n"
-"    background-color: #d7e9f8;\n"
-"    border: 1px solid #9fbad2;\n"
-"    padding: 6px 12px;\n"
-"    border-radius: 6px;\n"
-"    color: #1f2d3d;\n"
-"}")
-        self.btn_complete.setObjectName("btn_complete")
-        self.horizontalLayout_3.addWidget(self.btn_complete)
-        self.btn_add = QtWidgets.QPushButton(self.control_frame)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.btn_add.sizePolicy().hasHeightForWidth())
-        self.btn_add.setSizePolicy(sizePolicy)
-        self.btn_add.setMinimumSize(QtCore.QSize(120, 0))
-        font = QtGui.QFont()
-        font.setFamily("Noto Sans KR Medium")
-        font.setPointSize(16)
-        self.btn_add.setFont(font)
+
+        _groupbox_style = ("QGroupBox {"
+            " font-family: 'Noto Sans KR Medium';"
+            " font-size: 11pt;"
+            " font-weight: bold;"
+            " border: 1px solid #ccc;"
+            " border-radius: 6px;"
+            " margin-top: 14px;"
+            " padding: 4px 2px 2px 2px;"
+            "}"
+            "QGroupBox::title {"
+            " subcontrol-origin: margin;"
+            " left: 8px;"
+            " padding: 0 4px;"
+            "}")
+
+        _btn_font = QtGui.QFont()
+        _btn_font.setFamily("Noto Sans KR Medium")
+        _btn_font.setPointSize(14)
+        _btn_expanding = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+
+        # --- QGroupBox: 표 관리 ---
+        self.group_table = QtWidgets.QGroupBox(self.control_frame)
+        self.group_table.setStyleSheet(_groupbox_style)
+        self.group_table.setObjectName("group_table")
+        self._layout_group_table = QtWidgets.QHBoxLayout(self.group_table)
+        self._layout_group_table.setContentsMargins(4, 2, 4, 2)
+        self._layout_group_table.setSpacing(4)
+
+        self.btn_add = QtWidgets.QPushButton(self.group_table)
+        self.btn_add.setSizePolicy(_btn_expanding)
+        self.btn_add.setFont(_btn_font)
         self.btn_add.setStyleSheet("QPushButton {\n"
 "    background-color: #e9e3da;\n"
 "    border: 1px solid #bfb7ac;\n"
@@ -802,18 +805,11 @@ class Ui_Form(object):
 "    color: #2b2a28;\n"
 "}")
         self.btn_add.setObjectName("btn_add")
-        self.horizontalLayout_3.addWidget(self.btn_add)
-        self.btn_del = QtWidgets.QPushButton(self.control_frame)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.btn_del.sizePolicy().hasHeightForWidth())
-        self.btn_del.setSizePolicy(sizePolicy)
-        self.btn_del.setMinimumSize(QtCore.QSize(120, 0))
-        font = QtGui.QFont()
-        font.setFamily("Noto Sans KR Medium")
-        font.setPointSize(16)
-        self.btn_del.setFont(font)
+        self._layout_group_table.addWidget(self.btn_add)
+
+        self.btn_del = QtWidgets.QPushButton(self.group_table)
+        self.btn_del.setSizePolicy(_btn_expanding)
+        self.btn_del.setFont(_btn_font)
         self.btn_del.setStyleSheet("QPushButton {\n"
 "    background-color: #e9e3da;\n"
 "    border: 1px solid #bfb7ac;\n"
@@ -822,18 +818,11 @@ class Ui_Form(object):
 "    color: #2b2a28;\n"
 "}")
         self.btn_del.setObjectName("btn_del")
-        self.horizontalLayout_3.addWidget(self.btn_del)
-        self.btn_del_row = QtWidgets.QPushButton(self.control_frame)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.btn_del_row.sizePolicy().hasHeightForWidth())
-        self.btn_del_row.setSizePolicy(sizePolicy)
-        self.btn_del_row.setMinimumSize(QtCore.QSize(120, 0))
-        font = QtGui.QFont()
-        font.setFamily("Noto Sans KR Medium")
-        font.setPointSize(16)
-        self.btn_del_row.setFont(font)
+        self._layout_group_table.addWidget(self.btn_del)
+
+        self.btn_del_row = QtWidgets.QPushButton(self.group_table)
+        self.btn_del_row.setSizePolicy(_btn_expanding)
+        self.btn_del_row.setFont(_btn_font)
         self.btn_del_row.setStyleSheet("QPushButton {\n"
 "    background-color: #e9e3da;\n"
 "    border: 1px solid #bfb7ac;\n"
@@ -842,18 +831,34 @@ class Ui_Form(object):
 "    color: #2b2a28;\n"
 "}")
         self.btn_del_row.setObjectName("btn_del_row")
-        self.horizontalLayout_3.addWidget(self.btn_del_row)
-        self.btn_update = QtWidgets.QPushButton(self.control_frame)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.btn_update.sizePolicy().hasHeightForWidth())
-        self.btn_update.setSizePolicy(sizePolicy)
-        self.btn_update.setMinimumSize(QtCore.QSize(120, 0))
-        font = QtGui.QFont()
-        font.setFamily("Noto Sans KR Medium")
-        font.setPointSize(16)
-        self.btn_update.setFont(font)
+        self._layout_group_table.addWidget(self.btn_del_row)
+
+        self.horizontalLayout_3.addWidget(self.group_table)
+
+        # --- QGroupBox: 갱신 ---
+        self.group_refresh = QtWidgets.QGroupBox(self.control_frame)
+        self.group_refresh.setStyleSheet(_groupbox_style)
+        self.group_refresh.setObjectName("group_refresh")
+        self._layout_group_refresh = QtWidgets.QHBoxLayout(self.group_refresh)
+        self._layout_group_refresh.setContentsMargins(4, 2, 4, 2)
+        self._layout_group_refresh.setSpacing(4)
+
+        self.btn_complete = QtWidgets.QPushButton(self.group_refresh)
+        self.btn_complete.setSizePolicy(_btn_expanding)
+        self.btn_complete.setFont(_btn_font)
+        self.btn_complete.setStyleSheet("QPushButton {\n"
+"    background-color: #d7e9f8;\n"
+"    border: 1px solid #9fbad2;\n"
+"    padding: 6px 12px;\n"
+"    border-radius: 6px;\n"
+"    color: #1f2d3d;\n"
+"}")
+        self.btn_complete.setObjectName("btn_complete")
+        self._layout_group_refresh.addWidget(self.btn_complete)
+
+        self.btn_update = QtWidgets.QPushButton(self.group_refresh)
+        self.btn_update.setSizePolicy(_btn_expanding)
+        self.btn_update.setFont(_btn_font)
         self.btn_update.setStyleSheet("QPushButton {\n"
 "    background-color: #d9f1e7;\n"
 "    border: 1px solid #94c5ad;\n"
@@ -862,18 +867,11 @@ class Ui_Form(object):
 "    color: #1f2d3d;\n"
 "}")
         self.btn_update.setObjectName("btn_update")
-        self.horizontalLayout_3.addWidget(self.btn_update)
-        self.btn_update_product = QtWidgets.QPushButton(self.control_frame)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.btn_update_product.sizePolicy().hasHeightForWidth())
-        self.btn_update_product.setSizePolicy(sizePolicy)
-        self.btn_update_product.setMinimumSize(QtCore.QSize(120, 0))
-        font = QtGui.QFont()
-        font.setFamily("Noto Sans KR Medium")
-        font.setPointSize(16)
-        self.btn_update_product.setFont(font)
+        self._layout_group_refresh.addWidget(self.btn_update)
+
+        self.btn_update_product = QtWidgets.QPushButton(self.group_refresh)
+        self.btn_update_product.setSizePolicy(_btn_expanding)
+        self.btn_update_product.setFont(_btn_font)
         self.btn_update_product.setStyleSheet("QPushButton {\n"
 "    background-color: #d9f1e7;\n"
 "    border: 1px solid #94c5ad;\n"
@@ -882,42 +880,75 @@ class Ui_Form(object):
 "    color: #1f2d3d;\n"
 "}")
         self.btn_update_product.setObjectName("btn_update_product")
-        self.horizontalLayout_3.addWidget(self.btn_update_product)
-        self.btn_excel = QtWidgets.QPushButton(self.control_frame)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.btn_excel.sizePolicy().hasHeightForWidth())
-        self.btn_excel.setSizePolicy(sizePolicy)
-        font = QtGui.QFont()
-        font.setFamily("Noto Sans KR Medium")
-        font.setPointSize(16)
-        self.btn_excel.setFont(font)
+        self._layout_group_refresh.addWidget(self.btn_update_product)
+
+        self.horizontalLayout_3.addWidget(self.group_refresh)
+
+        # --- QGroupBox: 생산일지 연동 ---
+        self.group_diary = QtWidgets.QGroupBox(self.control_frame)
+        self.group_diary.setStyleSheet(_groupbox_style)
+        self.group_diary.setObjectName("group_diary")
+        self._layout_group_diary = QtWidgets.QHBoxLayout(self.group_diary)
+        self._layout_group_diary.setContentsMargins(4, 2, 4, 2)
+        self._layout_group_diary.setSpacing(4)
+
+        self.btn_same_product = QtWidgets.QPushButton(self.group_diary)
+        self.btn_same_product.setSizePolicy(_btn_expanding)
+        self.btn_same_product.setFont(_btn_font)
+        self.btn_same_product.setObjectName("btn_same_product")
+        self._layout_group_diary.addWidget(self.btn_same_product)
+
+        self.btn_sync_diary = QtWidgets.QPushButton(self.group_diary)
+        self.btn_sync_diary.setSizePolicy(_btn_expanding)
+        self.btn_sync_diary.setFont(_btn_font)
+        self.btn_sync_diary.setStyleSheet("QPushButton {\n"
+"    background-color: #d9f1e7;\n"
+"    border: 1px solid #94c5ad;\n"
+"    padding: 6px 12px;\n"
+"    border-radius: 6px;\n"
+"    color: #1f2d3d;\n"
+"}")
+        self.btn_sync_diary.setObjectName("btn_sync_diary")
+        self._layout_group_diary.addWidget(self.btn_sync_diary)
+
+        self.btn_delete_diary = QtWidgets.QPushButton(self.group_diary)
+        self.btn_delete_diary.setSizePolicy(_btn_expanding)
+        self.btn_delete_diary.setFont(_btn_font)
+        self.btn_delete_diary.setStyleSheet("QPushButton {\n"
+"    background-color: #fde2e1;\n"
+"    border: 1px solid #d39c97;\n"
+"    padding: 6px 12px;\n"
+"    border-radius: 6px;\n"
+"    color: #5a1f1c;\n"
+"}")
+        self.btn_delete_diary.setObjectName("btn_delete_diary")
+        self._layout_group_diary.addWidget(self.btn_delete_diary)
+
+        self.horizontalLayout_3.addWidget(self.group_diary)
+
+        # --- QGroupBox: 기타 ---
+        self.group_etc = QtWidgets.QGroupBox(self.control_frame)
+        self.group_etc.setStyleSheet(_groupbox_style)
+        self.group_etc.setObjectName("group_etc")
+        self._layout_group_etc = QtWidgets.QHBoxLayout(self.group_etc)
+        self._layout_group_etc.setContentsMargins(4, 2, 4, 2)
+        self._layout_group_etc.setSpacing(4)
+
+        self.btn_excel = QtWidgets.QPushButton(self.group_etc)
+        self.btn_excel.setSizePolicy(_btn_expanding)
+        self.btn_excel.setFont(_btn_font)
         self.btn_excel.setObjectName("btn_excel")
-        self.horizontalLayout_3.addWidget(self.btn_excel)
-        self.btn_log = QtWidgets.QPushButton(self.control_frame)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.btn_log.sizePolicy().hasHeightForWidth())
-        self.btn_log.setSizePolicy(sizePolicy)
-        self.btn_log.setMinimumSize(QtCore.QSize(120, 0))
-        font = QtGui.QFont()
-        font.setFamily("Noto Sans KR Medium")
-        font.setPointSize(16)
-        self.btn_log.setFont(font)
+        self._layout_group_etc.addWidget(self.btn_excel)
+
+        self.btn_log = QtWidgets.QPushButton(self.group_etc)
+        self.btn_log.setSizePolicy(_btn_expanding)
+        self.btn_log.setFont(_btn_font)
         self.btn_log.setObjectName("btn_log")
-        self.horizontalLayout_3.addWidget(self.btn_log)
-        self.btn_custom = QtWidgets.QPushButton(self.control_frame)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.btn_custom.sizePolicy().hasHeightForWidth())
-        self.btn_custom.setSizePolicy(sizePolicy)
-        font = QtGui.QFont()
-        font.setFamily("Noto Sans KR Medium")
-        font.setPointSize(16)
-        self.btn_custom.setFont(font)
+        self._layout_group_etc.addWidget(self.btn_log)
+
+        self.btn_custom = QtWidgets.QPushButton(self.group_etc)
+        self.btn_custom.setSizePolicy(_btn_expanding)
+        self.btn_custom.setFont(_btn_font)
         self.btn_custom.setStyleSheet("QPushButton {\n"
 "    background-color: #e8e1f3;\n"
 "    border: 1px solid #b6a8d1;\n"
@@ -926,7 +957,10 @@ class Ui_Form(object):
 "    color: #2b2a35;\n"
 "}")
         self.btn_custom.setObjectName("btn_custom")
-        self.horizontalLayout_3.addWidget(self.btn_custom)
+        self._layout_group_etc.addWidget(self.btn_custom)
+
+        self.horizontalLayout_3.addWidget(self.group_etc)
+
         self.verticalLayout_2.addWidget(self.control_frame)
 
         self.retranslateUi(Form)
@@ -964,15 +998,22 @@ class Ui_Form(object):
         self.btn_raw.setText(_translate("Form", "원료"))
         self.btn_sauce.setText(_translate("Form", "소스"))
         self.btn_vege.setText(_translate("Form", "야채"))
-        self.btn_complete.setText(_translate("Form", "작업완료"))
+        self.group_table.setTitle(_translate("Form", "표 관리"))
         self.btn_add.setText(_translate("Form", "표 생성"))
         self.btn_del.setText(_translate("Form", "표 삭제"))
         self.btn_del_row.setText(_translate("Form", "행 삭제"))
+        self.group_refresh.setTitle(_translate("Form", "갱신"))
+        self.btn_complete.setText(_translate("Form", "작업완료"))
         self.btn_update.setText(_translate("Form", "발주량 갱신"))
         self.btn_update_product.setText(_translate("Form", "출고량 갱신"))
+        self.group_diary.setTitle(_translate("Form", "생산일지 연동"))
+        self.btn_sync_diary.setText(_translate("Form", "생산품 자동입력"))
+        self.btn_delete_diary.setText(_translate("Form", "생산품 삭제"))
+        self.group_etc.setTitle(_translate("Form", "기타"))
         self.btn_excel.setText(_translate("Form", "엑셀"))
         self.btn_log.setText(_translate("Form", "로그"))
         self.btn_custom.setText(_translate("Form", "품명 관리"))
+        self.btn_same_product.setText(_translate("Form", "작업품목 병합"))
 
 
 if __name__ == "__main__":

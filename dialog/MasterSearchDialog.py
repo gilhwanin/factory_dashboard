@@ -23,7 +23,7 @@ class MasterSearchDialog(QDialog):
     GWCHUL..MASTER 에서 CO/UNAME 검색 후 선택 → (CO, UNAME, 업체명)
     """
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, show_vendor=True):
         super().__init__(parent)
         self.setWindowTitle("MASTER 검색")
         self.resize(700, 400)
@@ -46,6 +46,8 @@ class MasterSearchDialog(QDialog):
 
         self.combo_vendor = QComboBox()
         self.combo_vendor.addItems(VENDOR_CHOICES)
+        if not show_vendor:
+            self.combo_vendor.hide()
 
         self.btn_search = QPushButton("검색")
 
